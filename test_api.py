@@ -65,7 +65,12 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(body["answer_stage"], "abstract")
         self.assertEqual(body["paper_names"], ["Stub paper"])
         self.assertEqual(body["retrieved_papers"][0]["paper_id"], "1234.5678")
+        self.assertEqual(body["retrieved_papers"][0]["title"], "Stub paper")
+        self.assertEqual(body["retrieved_papers"][0]["category"], "cs.AI")
+        self.assertEqual(body["retrieved_papers"][0]["published"], "2025-01-01")
         self.assertEqual(body["retrieved_papers"][0]["url"], "https://arxiv.org/abs/1234.5678")
+        self.assertEqual(body["usage"]["input_tokens"], 1)
+        self.assertEqual(body["usage"]["output_tokens"], 2)
         self.assertEqual(body["usage"]["total_tokens"], 3)
         self.assertEqual(self.stub_agent.questions, ["compare methods"])
 

@@ -1,13 +1,24 @@
 """Streamlit frontend for the FastAPI research-paper assistant."""
 
 import os
+import math
 
 import httpx
 import streamlit as st
 
 
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000").rstrip("/")
-API_TIMEOUT_SECONDS = float(os.environ.get("API_TIMEOUT_SECONDS", "180"))
+
+
+def _api_timeout_seconds():
+    try:
+        value = float(os.environ.get("API_TIMEOUT_SECONDS", "180"))
+    except (TypeError, ValueError):
+        return 180.0
+    return value if math.isfinite(value) and value > 0 else 180.0
+
+
+API_TIMEOUT_SECONDS = _api_timeout_seconds()
 
 
 def _health():

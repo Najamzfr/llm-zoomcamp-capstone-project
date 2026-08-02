@@ -64,12 +64,16 @@ def observe_request(endpoint, status_code, duration_seconds):
 def observe_result(result):
     stage = str(result.get("answer_stage", "unknown"))
     ANSWER_STAGES.labels(stage if stage in {"abstract", "full_text", "abstract_fallback"} else "unknown").inc()
-    FULL_TEXT_ROUTING.labels("full_text" if stage == "full_text" else "abstract").inc()
     usage = result.get("usage") or {}
     INPUT_TOKENS.inc(float(usage.get("input_tokens", 0) or 0))
     OUTPUT_TOKENS.inc(float(usage.get("output_tokens", 0) or 0))
     ESTIMATED_COST.inc(float(usage.get("estimated_cost_usd", 0) or 0))
     for event in result.get("trajectory", []):
+        if event.get("name") == "evaluate_abstract_sufficiency":
+            decision = event.get("result", {}).get("needs_full_text")
+            if decision is None:
+                decision = event.get("needs_full_text")
+            FULL_TEXT_ROUTING.labels("full_text" if decision is True else "abstract").inc()
         if event.get("name") == "retrieve_full_text":
             FULL_TEXT_ATTEMPTS.inc()
             if event.get("success"):
