@@ -1,0 +1,11 @@
+{
+  "candidate_k": 50,
+  "rrf_constant": 90,
+  "text_weight": 0.8,
+  "vector_weight": 0.2,
+  "objective": 0.7119444444444444,
+  "precision_at_5": 0.44200000000000017,
+  "recall_at_5": 0.44200000000000017,
+  "hit_rate_at_5": 0.96,
+  "mrr_at_5": 0.7338333333333332
+}

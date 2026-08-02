@@ -1,0 +1,21 @@
+.env
+.venv
+*pycache*
+
+# Data
+*.db
+agent_answers.csv
+agent_evaluations.csv
+ground_truth_test.csv
+ground_truth.csv
+rag_answers.csv
+rag_evaluations.csv
+
+# Traces
+traces.jsonl
+agent_traces.jsonl
+evaluation_agent_traces.jsonl
+
+# embeddings
+*.bin
+*.npz
