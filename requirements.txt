@@ -7,3 +7,8 @@ sentence-transformers>=5.5.0
 faiss-cpu==1.14.3
 pymupdf==1.28.0
 tiktoken==0.13.0
+fastapi
+uvicorn[standard]
+streamlit
+httpx
+prometheus-client

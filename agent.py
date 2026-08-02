@@ -59,14 +59,17 @@ class AdaptiveResearchAgent:
         self,
         hybrid_search=None,
         paper_tools=None,
-        trace_path="agent_traces.jsonl",
+        trace_path=None,
     ):
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError("Set OPENAI_API_KEY before running the adaptive agent.")
         self.hybrid = hybrid_search or build_hybrid_search()
         self.paper_tools = paper_tools or PaperTools()
-        self.trace_path = Path(trace_path)
+        self.trace_path = Path(trace_path) if trace_path else None
         self.encoding = tiktoken.get_encoding("o200k_base")
+        from openai import OpenAI
+
+        self.client = OpenAI()
 
     def run(self, question):
         self.last_full_text_context = ""
@@ -242,11 +245,8 @@ class AdaptiveResearchAgent:
             "Model did not return valid JSON after three attempts."
         ) from last_error
 
-    @staticmethod
-    def _text_call(instructions, prompt, max_output_tokens):
-        from openai import OpenAI
-
-        response = OpenAI().responses.create(
+    def _text_call(self, instructions, prompt, max_output_tokens):
+        response = self.client.responses.create(
             model=MODEL,
             input=[
                 {"role": "developer", "content": instructions},
@@ -282,6 +282,8 @@ class AdaptiveResearchAgent:
         costs[stage] = usage
 
     def _save_trace(self, result):
+        if self.trace_path is None:
+            return
         record = {
             "question": result["question"],
             "paper_names": [paper["title"] for paper in result["papers"]],

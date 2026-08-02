@@ -1,41 +1,80 @@
-import sqlite3
+"""Streamlit frontend for the FastAPI research-paper assistant."""
 
-from agent import AdaptiveResearchAgent
-from openai import OpenAIError
+import os
+
+import httpx
+import streamlit as st
+
+
+API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000").rstrip("/")
+
+
+def _health():
+    try:
+        response = httpx.get(f"{API_BASE_URL}/health", timeout=5)
+        response.raise_for_status()
+        return True
+    except httpx.HTTPError:
+        return False
+
+
+def _ask(question):
+    response = httpx.post(
+        f"{API_BASE_URL}/ask", json={"question": question}, timeout=120
+    )
+    if response.is_error:
+        try:
+            detail = response.json().get("detail", "The backend could not answer.")
+        except ValueError:
+            detail = "The backend could not answer."
+        raise RuntimeError(detail)
+    return response.json()
 
 
 def main():
-    query = input("Prompt: ").strip()
-    if not query:
-        print("Please enter a research question.")
+    st.set_page_config(page_title="Research Paper RAG", page_icon="📄")
+    st.title("AI Research Paper Assistant")
+    st.write("Ask a question and get a cited answer grounded in retrieved arXiv papers.")
+
+    with st.sidebar:
+        st.subheader("Backend")
+        st.success("Healthy") if _health() else st.error("Unavailable")
+        st.caption(API_BASE_URL)
+
+    question = st.text_area("Research question", height=120, placeholder="Compare the methods used for...")
+    if not st.button("Ask", type="primary"):
+        return
+    if not question.strip():
+        st.warning("Enter a research question first.")
         return
 
     try:
-        result = AdaptiveResearchAgent().run(query)
-    except (
-        sqlite3.Error,
-        FileNotFoundError,
-        OpenAIError,
-        RuntimeError,
-        ValueError,
-    ) as error:
-        print(f"Could not answer the question: {error}")
+        with st.spinner("Searching papers and composing an answer…"):
+            result = _ask(question)
+    except (httpx.HTTPError, RuntimeError):
+        st.error("The backend could not answer right now. Check that FastAPI is running.")
         return
 
-    print(f"\nAnswer:\n{result['answer']}\n\nRetrieved papers:")
-    for paper in result["papers"]:
-        print(f"[{paper['rank']}] {paper['title']}")
-        print(
-            f"    {paper['submitted_date']} | {paper['category']} | {paper['arxiv_url']}"
-        )
+    st.markdown(result.get("answer", ""))
+    st.subheader("Retrieved papers")
+    for paper in result.get("retrieved_papers", []):
+        title = paper.get("title", "Untitled paper")
+        url = paper.get("url")
+        st.markdown(f"- [{title}]({url})" if url else f"- {title}")
+        details = " | ".join(str(value) for value in (paper.get("published"), paper.get("category")) if value)
+        if details:
+            st.caption(details)
 
-    usage = result["usage"]
-    print(f"\nAnswer source: {result['answer_stage']}")
-    print(
-        f"Input: {usage['input_tokens']} | Output: {usage['output_tokens']} | "
-        f"Total: {usage['total_tokens']} | "
-        f"Estimated cost: ${usage['estimated_cost_usd']:.8f}"
-    )
+    with st.expander("Run Details"):
+        st.write("Answer stage:", result.get("answer_stage", "unknown"))
+        st.json(result.get("trajectory", []))
+        usage = result.get("usage", {})
+        st.write(
+            f"Tokens: {usage.get('input_tokens', 0)} input / "
+            f"{usage.get('output_tokens', 0)} output / "
+            f"{usage.get('total_tokens', 0)} total"
+        )
+        st.write(f"Estimated cost: ${usage.get('estimated_cost_usd', 0):.8f}")
 
 
 if __name__ == "__main__":
