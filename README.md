@@ -19,6 +19,7 @@ py -m venv .venv
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 $env:OPENAI_API_KEY = "your-openai-api-key"
+$env:API_TIMEOUT_SECONDS = "180"
 ```
 
 Run ingestion only when the local database or vector index is missing:
@@ -44,4 +45,4 @@ The API uses GPT-4o-mini only. It does not persist prompts, answers, paper title
 
 ## Future milestones
 
-Docker, a Prometheus runtime, a Grafana runtime, PostgreSQL, Qdrant, authentication, and cloud deployment are intentionally out of scope for this first product layer.
+Docker, the Prometheus/Grafana runtime, PostgreSQL, Qdrant, authentication, and cloud deployment are reserved for a future Docker milestone.

@@ -47,6 +47,12 @@ FULL_TEXT_SUCCESSES = _collector(
 JUDGE_OUTCOMES = _collector(
     Counter, "rag_judge_outcomes", "Judge outcomes.", ("outcome",)
 )
+FULL_TEXT_ROUTING = _collector(
+    Counter,
+    "rag_full_text_routing",
+    "Answers routed to abstract or full-text retrieval.",
+    ("decision",),
+)
 
 
 def observe_request(endpoint, status_code, duration_seconds):
@@ -58,6 +64,7 @@ def observe_request(endpoint, status_code, duration_seconds):
 def observe_result(result):
     stage = str(result.get("answer_stage", "unknown"))
     ANSWER_STAGES.labels(stage if stage in {"abstract", "full_text", "abstract_fallback"} else "unknown").inc()
+    FULL_TEXT_ROUTING.labels("full_text" if stage == "full_text" else "abstract").inc()
     usage = result.get("usage") or {}
     INPUT_TOKENS.inc(float(usage.get("input_tokens", 0) or 0))
     OUTPUT_TOKENS.inc(float(usage.get("output_tokens", 0) or 0))
@@ -67,11 +74,7 @@ def observe_result(result):
             FULL_TEXT_ATTEMPTS.inc()
             if event.get("success"):
                 FULL_TEXT_SUCCESSES.inc()
-        if event.get("name") in {
-            "evaluate_abstract_sufficiency",
-            "evaluate_answer",
-            "evaluate_final_answer",
-        }:
+        if event.get("name") in {"evaluate_answer", "evaluate_final_answer"}:
             JUDGE_OUTCOMES.labels(event.get("outcome", "unknown")).inc()
 
 

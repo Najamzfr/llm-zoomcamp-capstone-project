@@ -4,7 +4,7 @@ import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from prometheus_client import generate_latest
 
 import metrics
@@ -16,7 +16,8 @@ _agent = None
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=MAX_QUESTION_LENGTH)
 
-    @validator("question")
+    @field_validator("question")
+    @classmethod
     def clean_question(cls, value):
         value = value.strip()
         if not value:
@@ -111,6 +112,8 @@ app = FastAPI(title="Research Paper RAG API", version="1.0.0", lifespan=lifespan
 
 @app.middleware("http")
 async def request_metrics(request: Request, call_next):
+    if request.url.path == "/metrics":
+        return await call_next(request)
     started = time.perf_counter()
     metrics.ACTIVE_REQUESTS.inc()
     status_code = 500
@@ -131,7 +134,7 @@ async def health():
 
 
 @app.post("/ask")
-async def ask(payload: AskRequest):
+def ask(payload: AskRequest):
     try:
         result = _get_agent().run(payload.question)
         response = _response(result, payload.question)

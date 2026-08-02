@@ -7,6 +7,7 @@ import streamlit as st
 
 
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000").rstrip("/")
+API_TIMEOUT_SECONDS = float(os.environ.get("API_TIMEOUT_SECONDS", "180"))
 
 
 def _health():
@@ -20,7 +21,7 @@ def _health():
 
 def _ask(question):
     response = httpx.post(
-        f"{API_BASE_URL}/ask", json={"question": question}, timeout=120
+        f"{API_BASE_URL}/ask", json={"question": question}, timeout=API_TIMEOUT_SECONDS
     )
     if response.is_error:
         try:
