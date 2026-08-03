@@ -1,7 +1,7 @@
-"""FastAPI backend for the research-paper assistant."""
-
 import time
 from contextlib import asynccontextmanager
+from threading import Lock
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, Field, field_validator
@@ -11,6 +11,7 @@ import metrics
 
 MAX_QUESTION_LENGTH = 2_000
 _agent = None
+_agent_lock = Lock()
 
 
 class AskRequest(BaseModel):
@@ -29,10 +30,13 @@ class AskRequest(BaseModel):
 
 def _get_agent():
     global _agent
-    if _agent is None:
-        from agent import AdaptiveResearchAgent
+    if _agent is not None:
+        return _agent
+    with _agent_lock:
+        if _agent is None:
+            from agent import AdaptiveResearchAgent
 
-        _agent = AdaptiveResearchAgent(trace_path=None)
+            _agent = AdaptiveResearchAgent(trace_path=None)
     return _agent
 
 

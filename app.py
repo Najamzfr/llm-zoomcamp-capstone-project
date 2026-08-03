@@ -1,29 +1,33 @@
-"""Streamlit frontend for the FastAPI research-paper assistant."""
-
-import os
 import math
+import os
 
 import httpx
 import streamlit as st
+from dotenv import load_dotenv
 
+load_dotenv()
 
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000").rstrip("/")
+DEFAULT_API_TIMEOUT_SECONDS = 300.0
 
 
 def _api_timeout_seconds():
     try:
-        value = float(os.environ.get("API_TIMEOUT_SECONDS", "180"))
+        value = float(
+            os.environ.get("API_TIMEOUT_SECONDS", str(DEFAULT_API_TIMEOUT_SECONDS))
+        )
     except (TypeError, ValueError):
-        return 180.0
-    return value if math.isfinite(value) and value > 0 else 180.0
+        return DEFAULT_API_TIMEOUT_SECONDS
+    return value if math.isfinite(value) and value > 0 else DEFAULT_API_TIMEOUT_SECONDS
 
 
 API_TIMEOUT_SECONDS = _api_timeout_seconds()
+HTTP_CLIENT = httpx.Client(base_url=API_BASE_URL, trust_env=False)
 
 
 def _health():
     try:
-        response = httpx.get(f"{API_BASE_URL}/health", timeout=5)
+        response = HTTP_CLIENT.get("/health", timeout=5)
         response.raise_for_status()
         return True
     except httpx.HTTPError:
@@ -31,15 +35,31 @@ def _health():
 
 
 def _ask(question):
-    response = httpx.post(
-        f"{API_BASE_URL}/ask", json={"question": question}, timeout=API_TIMEOUT_SECONDS
-    )
+    try:
+        response = HTTP_CLIENT.post(
+            "/ask",
+            json={"question": question},
+            timeout=API_TIMEOUT_SECONDS,
+        )
+    except httpx.TimeoutException as error:
+        raise RuntimeError(
+            f"The request exceeded {API_TIMEOUT_SECONDS:g} seconds. "
+            "The first request can be slower while the embedding model loads."
+        ) from error
+    except httpx.ConnectError as error:
+        raise RuntimeError(
+            f"Cannot connect to FastAPI at {API_BASE_URL}. Start it with: "
+            "uvicorn api:app"
+        ) from error
+    except httpx.RequestError as error:
+        raise RuntimeError("The connection to FastAPI failed.") from error
+
     if response.is_error:
         try:
             detail = response.json().get("detail", "The backend could not answer.")
         except ValueError:
             detail = "The backend could not answer."
-        raise RuntimeError(detail)
+        raise RuntimeError(f"FastAPI returned {response.status_code}: {detail}")
     return response.json()
 
 
@@ -49,8 +69,8 @@ def main():
     st.write("Ask a question and get a cited answer grounded in retrieved arXiv papers.")
 
     with st.sidebar:
-        st.subheader("Backend")
-        st.success("Healthy") if _health() else st.error("Unavailable")
+        st.subheader("FastAPI")
+        st.success("Connected") if _health() else st.error("Unavailable")
         st.caption(API_BASE_URL)
 
     question = st.text_area("Research question", height=120, placeholder="Compare the methods used for...")
@@ -63,8 +83,8 @@ def main():
     try:
         with st.spinner("Searching papers and composing an answer…"):
             result = _ask(question)
-    except (httpx.HTTPError, RuntimeError):
-        st.error("The backend could not answer right now. Check that FastAPI is running.")
+    except RuntimeError as error:
+        st.error(str(error))
         return
 
     st.markdown(result.get("answer", ""))
