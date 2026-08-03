@@ -1,21 +1,26 @@
 .env
-.venv
-*pycache*
+.venv/
+__pycache__/
+*.py[cod]
 
-# Data
+# Local data and indexes
+paper_cache/
 *.db
+*.sqlite
+*.sqlite3
+*.bin
+*.npz
+
+# Generated evaluation and trace outputs
 agent_answers.csv
 agent_evaluations.csv
 ground_truth_test.csv
 ground_truth.csv
 rag_answers.csv
 rag_evaluations.csv
-
-# Traces
 traces.jsonl
 agent_traces.jsonl
 evaluation_agent_traces.jsonl
 
-# embeddings
-*.bin
-*.npz
+# Local planning artifacts
+/plan/
