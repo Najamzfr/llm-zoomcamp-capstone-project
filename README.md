@@ -2,6 +2,14 @@
 
 This project retrieves arXiv research papers with SQLite FTS5 plus FAISS/HNSW hybrid search, then uses GPT-4o-mini through an adaptive abstract/full-text agent. Full-text context remains capped at 5,000 tokens.
 
+## Problem Description
+
+The AI Research Paper Assistant helps students, researchers, and practitioners discover and understand recent AI/ML research without manually reading thousands of papers. It retrieves relevant arXiv papers, synthesizes answers from titles and abstracts, and escalates to selected full-text PDFs when abstracts are insufficient for detailed questions.
+
+### Dataset
+
+The project uses approximately 7,701 arXiv AI/ML papers from 2025–2026, including titles, abstracts, authors, categories, dates, and arXiv links. [Source dataset](https://www.kaggle.com/datasets/shree0910/arxiv-aiml-research-papers-20252026)
+
 ## Structure
 
 - `api.py` — FastAPI backend (`/health`, `/ask`, `/metrics`)
