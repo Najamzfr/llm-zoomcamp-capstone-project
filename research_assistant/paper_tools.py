@@ -12,7 +12,9 @@ import requests
 import tiktoken
 from sentence_transformers import SentenceTransformer
 
-CACHE_DIR = Path("paper_cache")
+from .paths import PAPER_CACHE_DIR
+
+CACHE_DIR = PAPER_CACHE_DIR
 PDF_DIR = CACHE_DIR / "pdfs"
 CHUNK_DIR = CACHE_DIR / "chunks"
 MAX_PAPERS = 3

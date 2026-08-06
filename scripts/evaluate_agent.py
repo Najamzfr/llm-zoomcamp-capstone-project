@@ -3,19 +3,20 @@
 import json
 import os
 
-from agent import AdaptiveResearchAgent
-from evaluate_rag import (
+from research_assistant.agent import AdaptiveResearchAgent
+from research_assistant.paths import EVALUATION_DIR, TRACE_DIR
+from scripts.evaluate_rag import (
     json_call,
     read_csv,
     reference_evidence,
     write_csv,
 )
-from paper_tools import MAX_CHUNKS, MAX_FULL_TEXT_TOKENS, MAX_PAPERS
-from rag import merge_usages
+from research_assistant.paper_tools import MAX_CHUNKS, MAX_FULL_TEXT_TOKENS, MAX_PAPERS
+from research_assistant.rag import merge_usages
 
-GROUND_TRUTH_PATH = "ground_truth_test.csv"
-ANSWERS_PATH = "agent_answers.csv"
-EVALUATIONS_PATH = "agent_evaluations.csv"
+GROUND_TRUTH_PATH = EVALUATION_DIR / "ground_truth_test.csv"
+ANSWERS_PATH = EVALUATION_DIR / "agent_answers.csv"
+EVALUATIONS_PATH = EVALUATION_DIR / "agent_evaluations.csv"
 LIMIT = 10  # Use None for the complete evaluation.
 RUN_GENERATION = True
 RUN_JUDGE = True
@@ -49,7 +50,7 @@ def generate_answers():
     records = read_csv(GROUND_TRUTH_PATH)
     if LIMIT is not None:
         records = records[:LIMIT]
-    agent = AdaptiveResearchAgent(trace_path="evaluation_agent_traces.jsonl")
+    agent = AdaptiveResearchAgent(trace_path=TRACE_DIR / "evaluation_agent_traces.jsonl")
     answers = []
 
     for number, record in enumerate(records, start=1):

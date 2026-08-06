@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field, field_validator
 from prometheus_client import generate_latest
 
-import metrics
+from research_assistant import metrics
 
 MAX_QUESTION_LENGTH = 2_000
 _agent = None
@@ -34,7 +34,7 @@ def _get_agent():
         return _agent
     with _agent_lock:
         if _agent is None:
-            from agent import AdaptiveResearchAgent
+            from research_assistant.agent import AdaptiveResearchAgent
 
             _agent = AdaptiveResearchAgent(trace_path=None)
     return _agent

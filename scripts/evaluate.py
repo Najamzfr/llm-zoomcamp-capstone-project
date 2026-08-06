@@ -1,9 +1,10 @@
 import csv
 import time
 
-from rag import ExactVectorSearch, VectorSearch, build_hybrid_search, retrieve
+from research_assistant.paths import EVALUATION_DIR
+from research_assistant.rag import ExactVectorSearch, VectorSearch, build_hybrid_search, retrieve
 
-GROUND_TRUTH_PATH = "ground_truth_test.csv"
+GROUND_TRUTH_PATH = EVALUATION_DIR / "ground_truth_test.csv"
 K = 5
 
 

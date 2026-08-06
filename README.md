@@ -14,10 +14,13 @@ The project uses approximately 7,701 arXiv AI/ML papers from 2025–2026, includ
 
 - `api.py` — FastAPI backend (`/health`, `/ask`, `/metrics`)
 - `app.py` — Streamlit frontend
-- `rag.py`, `agent.py`, `paper_tools.py` — retrieval, adaptive answering, and PDF chunking
-- `metrics.py` — Prometheus metrics
+- `research_assistant/` — retrieval, adaptive answering, PDF chunking, metrics, and project paths
+- `scripts/` — ingestion, evaluation, and RRF tuning commands
+- `tests/` — API, Streamlit, and path/ingestion checks
+- `data/source/` — source arXiv dataset; `data/indexes/` and `data/evaluation/` — local generated data
+- `config/` — RRF configuration; `artifacts/` — local PDF cache and traces
 - `grafana/research_rag_overview.json` — importable dashboard
-- `ingest.py`, `ingest_vector.py` — optional ingestion tools
+- `ingest.py`, `ingest_vector.py` — compatibility entry points for optional ingestion
 
 ## Windows PowerShell setup
 
@@ -35,6 +38,12 @@ Run ingestion only when the local database or vector index is missing:
 ```powershell
 python ingest.py
 python ingest_vector.py
+```
+
+Run checks:
+
+```powershell
+python -m unittest discover -s tests -v
 ```
 
 Start the services in separate PowerShell windows:

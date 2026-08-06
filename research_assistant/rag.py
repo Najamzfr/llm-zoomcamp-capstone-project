@@ -15,9 +15,15 @@ try:
 except ImportError:
     pass
 
-DATABASE_PATH = os.environ.get("RAG_DATABASE_PATH", "arxiv.db")
-VECTOR_METADATA_PATH = os.environ.get("VECTOR_METADATA_PATH", "vector_index.npz")
-VECTOR_INDEX_PATH = os.environ.get("VECTOR_INDEX_PATH", "vector_index.bin")
+from .paths import CONFIG_PATH, DATABASE_PATH as DEFAULT_DATABASE_PATH
+from .paths import TRACE_DIR, VECTOR_INDEX_PATH as DEFAULT_VECTOR_INDEX_PATH
+from .paths import VECTOR_METADATA_PATH as DEFAULT_VECTOR_METADATA_PATH
+
+DATABASE_PATH = Path(os.environ.get("RAG_DATABASE_PATH", DEFAULT_DATABASE_PATH))
+VECTOR_METADATA_PATH = Path(
+    os.environ.get("VECTOR_METADATA_PATH", DEFAULT_VECTOR_METADATA_PATH)
+)
+VECTOR_INDEX_PATH = Path(os.environ.get("VECTOR_INDEX_PATH", DEFAULT_VECTOR_INDEX_PATH))
 HNSW_EF_SEARCH = 50
 MODEL = "gpt-4o-mini"
 MODEL_PRICING_PER_MILLION = {
@@ -41,7 +47,7 @@ SYSTEM_PROMPT = (
 
 
 class Trace:
-    def __init__(self, path="traces.jsonl"):
+    def __init__(self, path=TRACE_DIR / "traces.jsonl"):
         self.path = Path(path)
 
     def save(self, question, papers, answer, usage):
@@ -62,7 +68,7 @@ class ResearchAssistant:
         db_path=DATABASE_PATH,
         k=5,
         model=MODEL,
-        trace_path="traces.jsonl",
+        trace_path=TRACE_DIR / "traces.jsonl",
         system_prompt=SYSTEM_PROMPT,
         search_method=None,
         hybrid_search=None,
@@ -355,7 +361,7 @@ class HybridSearch:
         return papers
 
 
-def load_rrf_config(path="rrf_config.json"):
+def load_rrf_config(path=CONFIG_PATH):
     config_path = Path(path)
     if not config_path.exists():
         return {}
@@ -366,7 +372,7 @@ def build_hybrid_search(
     db_path=DATABASE_PATH,
     vector_path=VECTOR_INDEX_PATH,
     vector_metadata_path=VECTOR_METADATA_PATH,
-    config_path="rrf_config.json",
+    config_path=CONFIG_PATH,
     vector_search=None,
 ):
     config = load_rrf_config(config_path)
@@ -510,7 +516,7 @@ def ask(
     db_path=DATABASE_PATH,
     latest=False,
     mode="OR",
-    trace_path="traces.jsonl",
+    trace_path=TRACE_DIR / "traces.jsonl",
 ):
     assistant = ResearchAssistant(db_path=db_path, k=k, trace_path=trace_path)
     return assistant.ask(query, latest=latest, mode=mode)

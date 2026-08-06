@@ -6,8 +6,9 @@ import re
 from pathlib import Path
 
 import tiktoken
-from paper_tools import MAX_FULL_TEXT_TOKENS, MAX_PAPERS, PaperTools
-from rag import (
+from .paper_tools import MAX_FULL_TEXT_TOKENS, MAX_PAPERS, PaperTools
+from .paths import TRACE_DIR
+from .rag import (
     MODEL,
     ResearchAssistant,
     build_hybrid_search,
@@ -143,7 +144,7 @@ class AdaptiveResearchAgent:
         assistant = ResearchAssistant(
             hybrid_search=self.hybrid,
             search_method="hybrid",
-            trace_path="traces.jsonl",
+            trace_path=TRACE_DIR / "traces.jsonl",
         )
         prompt = assistant.build_prompt(question, papers)
         answer = assistant.llm(prompt)

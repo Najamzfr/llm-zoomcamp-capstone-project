@@ -3,24 +3,15 @@
 __pycache__/
 *.py[cod]
 
-# Local data and indexes
-paper_cache/
+# Local data, indexes, and generated artifacts
+/data/indexes/
+/data/evaluation/
+/artifacts/
 *.db
 *.sqlite
 *.sqlite3
 *.bin
 *.npz
-
-# Generated evaluation and trace outputs
-agent_answers.csv
-agent_evaluations.csv
-ground_truth_test.csv
-ground_truth.csv
-rag_answers.csv
-rag_evaluations.csv
-traces.jsonl
-agent_traces.jsonl
-evaluation_agent_traces.jsonl
 
 # Local planning artifacts
 /plan/

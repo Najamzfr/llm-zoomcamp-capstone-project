@@ -4,11 +4,11 @@ import csv
 import json
 from itertools import product
 
-from rag import VectorSearch, retrieve
+from research_assistant.paths import CONFIG_PATH, EVALUATION_DIR
+from research_assistant.rag import VectorSearch, retrieve
 
 
-VALIDATION_PATH = "ground_truth.csv"
-CONFIG_PATH = "rrf_config.json"
+VALIDATION_PATH = EVALUATION_DIR / "ground_truth.csv"
 K = 5
 MAX_CANDIDATES = 50
 

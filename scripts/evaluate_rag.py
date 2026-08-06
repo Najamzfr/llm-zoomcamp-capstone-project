@@ -6,7 +6,8 @@ import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 
-from rag import (
+from research_assistant.paths import EVALUATION_DIR
+from research_assistant.rag import (
     MODEL,
     ResearchAssistant,
     build_hybrid_search,
@@ -15,9 +16,9 @@ from rag import (
     merge_usages,
 )
 
-GROUND_TRUTH_PATH = "ground_truth_test.csv"
-ANSWERS_PATH = "rag_answers.csv"
-EVALUATIONS_PATH = "rag_evaluations.csv"
+GROUND_TRUTH_PATH = EVALUATION_DIR / "ground_truth_test.csv"
+ANSWERS_PATH = EVALUATION_DIR / "rag_answers.csv"
+EVALUATIONS_PATH = EVALUATION_DIR / "rag_evaluations.csv"
 LIMIT = 10  # Use None for the complete evaluation.
 WORKERS = 4
 RUN_GENERATION = True
