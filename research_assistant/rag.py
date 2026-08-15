@@ -383,15 +383,24 @@ def build_hybrid_search(
     vector_search=None,
 ):
     config = load_rrf_config(config_path)
+
+    def rrf_value(key, environment, default):
+        if environment not in os.environ:
+            return config.get(key, default)
+        try:
+            return type(default)(os.environ[environment])
+        except ValueError:
+            return default
+
     return HybridSearch(
         db_path=db_path,
         vector_path=vector_path,
         vector_metadata_path=vector_metadata_path,
         vector_search=vector_search,
-        candidate_k=config.get("candidate_k", settings.rrf_candidate_k),
-        rrf_constant=config.get("rrf_constant", settings.rrf_constant),
-        text_weight=config.get("text_weight", settings.rrf_text_weight),
-        vector_weight=config.get("vector_weight", settings.rrf_vector_weight),
+        candidate_k=rrf_value("candidate_k", "RAG_RRF_CANDIDATE_K", settings.rrf_candidate_k),
+        rrf_constant=rrf_value("rrf_constant", "RAG_RRF_CONSTANT", settings.rrf_constant),
+        text_weight=rrf_value("text_weight", "RAG_RRF_TEXT_WEIGHT", settings.rrf_text_weight),
+        vector_weight=rrf_value("vector_weight", "RAG_RRF_VECTOR_WEIGHT", settings.rrf_vector_weight),
     )
 
 

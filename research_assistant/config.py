@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 try:
     from dotenv import load_dotenv
 
@@ -26,18 +28,20 @@ def _float(name, default):
         return default
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+def _path(name, default):
+    value = Path(os.getenv(name, default))
+    return value if value.is_absolute() else PROJECT_ROOT / value
 
 
 @dataclass(frozen=True)
 class Settings:
-    source_data_path: Path = Path(os.getenv("RAG_SOURCE_DATA_PATH", PROJECT_ROOT / "data/source/data.csv"))
-    database_path: Path = Path(os.getenv("RAG_DATABASE_PATH", PROJECT_ROOT / "data/indexes/arxiv.db"))
-    vector_metadata_path: Path = Path(os.getenv("RAG_VECTOR_METADATA_PATH", PROJECT_ROOT / "data/indexes/vector_index.npz"))
-    vector_index_path: Path = Path(os.getenv("RAG_VECTOR_INDEX_PATH", PROJECT_ROOT / "data/indexes/vector_index.bin"))
-    rrf_config_path: Path = Path(os.getenv("RAG_RRF_CONFIG_PATH", PROJECT_ROOT / "config/rrf_config.json"))
-    trace_dir: Path = Path(os.getenv("RAG_TRACE_DIR", PROJECT_ROOT / "artifacts/traces"))
-    paper_cache_dir: Path = Path(os.getenv("RAG_PAPER_CACHE_DIR", PROJECT_ROOT / "artifacts/paper_cache"))
+    source_data_path: Path = _path("RAG_SOURCE_DATA_PATH", "data/source/data.csv")
+    database_path: Path = _path("RAG_DATABASE_PATH", "data/indexes/arxiv.db")
+    vector_metadata_path: Path = _path("RAG_VECTOR_METADATA_PATH", "data/indexes/vector_index.npz")
+    vector_index_path: Path = _path("RAG_VECTOR_INDEX_PATH", "data/indexes/vector_index.bin")
+    rrf_config_path: Path = _path("RAG_RRF_CONFIG_PATH", "config/rrf_config.json")
+    trace_dir: Path = _path("RAG_TRACE_DIR", "artifacts/traces")
+    paper_cache_dir: Path = _path("RAG_PAPER_CACHE_DIR", "artifacts/paper_cache")
     search_backend: str = os.getenv("SEARCH_BACKEND", "sqlite_faiss")
     search_method: str = os.getenv("RAG_SEARCH_METHOD", "hybrid")
     result_count: int = _int("RAG_RESULT_COUNT", 5)

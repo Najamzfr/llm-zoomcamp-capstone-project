@@ -45,6 +45,20 @@ Run checks:
 uv run python -m unittest discover -s tests -v
 ```
 
+Run the retrieval baseline (after local ingestion):
+
+```powershell
+uv run python scripts/evaluate.py
+```
+
+`RAG_*_PATH` settings can be repository-relative or absolute. RRF precedence is
+built-in defaults, then `config/rrf_config.json`, then `RAG_RRF_*` environment
+variables. For Hugging Face downloads through SOCKS, set
+`HTTPS_PROXY=socks5://host:port` before vector ingestion.
+
+The opt-in paid RAG baseline and real UI-to-API smoke check need an
+`OPENAI_API_KEY`; start the API, then run `make baseline-rag` or `make live-smoke`.
+
 Start the services in separate PowerShell windows:
 
 ```powershell
@@ -62,5 +76,3 @@ The API uses GPT-4o-mini only. It does not persist prompts, answers, paper title
 ## Future milestones
 
 Docker, the Prometheus/Grafana runtime, PostgreSQL, Qdrant, authentication, and cloud deployment are reserved for a future Docker milestone.
-
-Now working in a new branch

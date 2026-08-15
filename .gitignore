@@ -1,12 +1,15 @@
 .env
 .venv/
 .uv-cache/
+.tools/
 __pycache__/
 *.py[cod]
 
 # Local data, indexes, and generated artifacts
 /data/indexes/
-/data/evaluation/
+/data/evaluation/*
+!/data/evaluation/ground_truth.csv
+!/data/evaluation/ground_truth_test.csv
 /artifacts/
 *.db
 *.sqlite

@@ -12,6 +12,12 @@ ingest-vectors:
 evaluate:
 	uv run python scripts/evaluate.py
 
+baseline-rag:
+	uv run python scripts/baseline_rag.py
+
+live-smoke:
+	uv run python scripts/live_smoke.py
+
 api:
 	uv run uvicorn api:app
 

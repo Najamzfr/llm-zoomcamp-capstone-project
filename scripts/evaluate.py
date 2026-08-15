@@ -22,10 +22,12 @@ def relevant_ids(record):
 
 
 def metrics(records, search):
-    precision = recall = hit_rate = mrr = 0.0
+    precision = recall = hit_rate = mrr = latency_ms = 0.0
     for record in records:
         expected = relevant_ids(record)
+        started = time.perf_counter()
         results = search(record["question"])
+        latency_ms += (time.perf_counter() - started) * 1000
         relevance = [paper["paper_id"] in expected for paper in results]
         precision += sum(relevance) / len(results) if results else 0
         recall += sum(relevance) / len(expected) if expected else 0
@@ -40,6 +42,7 @@ def metrics(records, search):
         "recall": recall / count,
         "hit_rate": hit_rate / count,
         "mrr": mrr / count,
+        "latency_ms": latency_ms / count,
     }
 
 
@@ -65,16 +68,16 @@ def ann_quality(records, exact, ann):
 
 
 def print_table(results):
-    print("\n+----------------+-------------+----------+------------+-------+")
-    print("| Search method  | Precision@5 | Recall@5 | Hit Rate@5 | MRR@5 |")
-    print("+----------------+-------------+----------+------------+-------+")
+    print("\n+----------------+-------------+----------+------------+-------+------------+")
+    print("| Search method  | Precision@5 | Recall@5 | Hit Rate@5 | MRR@5 | Latency ms |")
+    print("+----------------+-------------+----------+------------+-------+------------+")
     for name, values in results.items():
         print(
             f"| {name:<14} | {values['precision']:>11.3f} | "
             f"{values['recall']:>8.3f} | {values['hit_rate']:>10.3f} | "
-            f"{values['mrr']:>5.3f} |"
+            f"{values['mrr']:>5.3f} | {values['latency_ms']:>10.2f} |"
         )
-    print("+----------------+-------------+----------+------------+-------+")
+    print("+----------------+-------------+----------+------------+-------+------------+")
 
 
 def main():
