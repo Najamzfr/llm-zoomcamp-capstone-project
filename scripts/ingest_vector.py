@@ -1,20 +1,20 @@
 """Build exact embeddings and an HNSW approximate-nearest-neighbor index."""
 
-import os
 import time
 
 import faiss
 import numpy as np
-from research_assistant.paths import SOURCE_DATA_PATH, VECTOR_INDEX_PATH, VECTOR_METADATA_PATH
+from research_assistant.config import settings
+from research_assistant.paths import SOURCE_DATA_PATH
 from scripts.ingest import load_rows
 from sentence_transformers import SentenceTransformer
 
-VECTOR_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-EXACT_INDEX_PATH = VECTOR_METADATA_PATH
-ANN_INDEX_PATH = VECTOR_INDEX_PATH
-HNSW_M = 16
-HNSW_EF_CONSTRUCTION = 200
-HNSW_EF_SEARCH = 50
+VECTOR_MODEL = settings.embedding_model
+EXACT_INDEX_PATH = settings.vector_metadata_path
+ANN_INDEX_PATH = settings.vector_index_path
+HNSW_M = settings.hnsw_m
+HNSW_EF_CONSTRUCTION = settings.hnsw_ef_construction
+HNSW_EF_SEARCH = settings.hnsw_ef_search
 
 
 def format_time(seconds):
@@ -34,6 +34,8 @@ def document_text(row):
 
 def ingest_vectors(data_path=SOURCE_DATA_PATH):
     started = time.perf_counter()
+    EXACT_INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
+    ANN_INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
     print("Stage 1/4: Loading papers...", flush=True)
     rows = load_rows(data_path)
     documents = [document_text(row) for row in rows]
@@ -81,8 +83,8 @@ def ingest_vectors(data_path=SOURCE_DATA_PATH):
         "elapsed_seconds": round(elapsed, 2),
     }
     print(f"Completed in {format_time(elapsed)}")
-    print(f"Exact index: {os.path.getsize(EXACT_INDEX_PATH) / 1024**2:.2f} MB")
-    print(f"ANN index: {os.path.getsize(ANN_INDEX_PATH) / 1024**2:.2f} MB")
+    print(f"Exact index: {EXACT_INDEX_PATH.stat().st_size / 1024**2:.2f} MB")
+    print(f"ANN index: {ANN_INDEX_PATH.stat().st_size / 1024**2:.2f} MB")
     return result
 
 

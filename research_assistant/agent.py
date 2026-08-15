@@ -7,11 +7,12 @@ from pathlib import Path
 
 import tiktoken
 from .paper_tools import MAX_FULL_TEXT_TOKENS, MAX_PAPERS, PaperTools
+from .config import settings
 from .paths import TRACE_DIR
 from .rag import (
     MODEL,
     ResearchAssistant,
-    build_hybrid_search,
+    build_search_backend,
     calculate_usage,
     merge_usages,
 )
@@ -64,7 +65,7 @@ class AdaptiveResearchAgent:
     ):
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError("Set OPENAI_API_KEY before running the adaptive agent.")
-        self.hybrid = hybrid_search or build_hybrid_search()
+        self.hybrid = hybrid_search or build_search_backend()
         self.paper_tools = paper_tools or PaperTools()
         self.trace_path = Path(trace_path) if trace_path else None
         self.encoding = tiktoken.get_encoding("o200k_base")
@@ -74,11 +75,11 @@ class AdaptiveResearchAgent:
 
     def run(self, question):
         self.last_full_text_context = ""
-        papers = self.hybrid.search(question, k=5)
+        papers = self.hybrid.search(question, k=settings.result_count)
         trajectory = [
             {
                 "name": "search_papers",
-                "arguments": {"query": question, "k": 5},
+                "arguments": {"query": question, "k": settings.result_count},
                 "retrieved_paper_ids": [paper["paper_id"] for paper in papers],
             }
         ]
@@ -219,7 +220,7 @@ class AdaptiveResearchAgent:
         answer, usage = self._text_call(
             FULL_TEXT_PROMPT,
             f"Question:\n{question}\n\nFull-text evidence:\n{context}",
-            max_output_tokens=700,
+            max_output_tokens=settings.max_full_text_answer_tokens,
         )
         self._record_usage(usages, costs, "full_text_answer", usage)
         final_check, usage = self._json_call(
@@ -236,7 +237,9 @@ class AdaptiveResearchAgent:
         usages = []
         last_error = None
         for _ in range(3):
-            text, usage = self._text_call(instructions, prompt, max_output_tokens=300)
+            text, usage = self._text_call(
+                instructions, prompt, max_output_tokens=settings.max_router_tokens
+            )
             usages.append(usage)
             try:
                 return self._parse_json(text), merge_usages(usages)

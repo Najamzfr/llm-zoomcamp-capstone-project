@@ -7,9 +7,10 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field, field_validator
 from prometheus_client import generate_latest
 
+from research_assistant.config import settings
 from research_assistant import metrics
 
-MAX_QUESTION_LENGTH = 2_000
+MAX_QUESTION_LENGTH = settings.max_question_length
 _agent = None
 _agent_lock = Lock()
 

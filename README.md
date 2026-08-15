@@ -25,9 +25,8 @@ The project uses approximately 7,701 arXiv AI/ML papers from 2025–2026, includ
 ## Windows PowerShell setup
 
 ```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+# Install uv first: https://docs.astral.sh/uv/getting-started/installation/
+uv sync
 Copy-Item .env.example .env
 $env:OPENAI_API_KEY = "your-openai-api-key"
 $env:API_TIMEOUT_SECONDS = "180"
@@ -36,21 +35,21 @@ $env:API_TIMEOUT_SECONDS = "180"
 Run ingestion only when the local database or vector index is missing:
 
 ```powershell
-python ingest.py
-python ingest_vector.py
+uv run python ingest.py
+uv run python ingest_vector.py
 ```
 
 Run checks:
 
 ```powershell
-python -m unittest discover -s tests -v
+uv run python -m unittest discover -s tests -v
 ```
 
 Start the services in separate PowerShell windows:
 
 ```powershell
-uvicorn api:app --reload
-streamlit run app.py
+uv run uvicorn api:app --reload
+uv run streamlit run app.py
 ```
 
 - Streamlit: http://localhost:8501
@@ -65,4 +64,3 @@ The API uses GPT-4o-mini only. It does not persist prompts, answers, paper title
 Docker, the Prometheus/Grafana runtime, PostgreSQL, Qdrant, authentication, and cloud deployment are reserved for a future Docker milestone.
 
 Now working in a new branch
-

@@ -1,24 +1,19 @@
 import math
-import os
 
 import httpx
 import streamlit as st
-from dotenv import load_dotenv
+from research_assistant.config import settings
 
-load_dotenv()
-
-API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000").rstrip("/")
-DEFAULT_API_TIMEOUT_SECONDS = 300.0
+API_BASE_URL = settings.api_base_url
+DEFAULT_API_TIMEOUT_SECONDS = settings.api_timeout_seconds
 
 
 def _api_timeout_seconds():
-    try:
-        value = float(
-            os.environ.get("API_TIMEOUT_SECONDS", str(DEFAULT_API_TIMEOUT_SECONDS))
-        )
-    except (TypeError, ValueError):
-        return DEFAULT_API_TIMEOUT_SECONDS
-    return value if math.isfinite(value) and value > 0 else DEFAULT_API_TIMEOUT_SECONDS
+    return (
+        DEFAULT_API_TIMEOUT_SECONDS
+        if math.isfinite(DEFAULT_API_TIMEOUT_SECONDS) and DEFAULT_API_TIMEOUT_SECONDS > 0
+        else 300.0
+    )
 
 
 API_TIMEOUT_SECONDS = _api_timeout_seconds()

@@ -1,14 +1,13 @@
 """Repository-rooted paths for local project assets."""
 
-from pathlib import Path
+from .config import PROJECT_ROOT, settings
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SOURCE_DATA_PATH = PROJECT_ROOT / "data" / "source" / "data.csv"
-INDEX_DIR = PROJECT_ROOT / "data" / "indexes"
-DATABASE_PATH = INDEX_DIR / "arxiv.db"
-VECTOR_METADATA_PATH = INDEX_DIR / "vector_index.npz"
-VECTOR_INDEX_PATH = INDEX_DIR / "vector_index.bin"
+SOURCE_DATA_PATH = settings.source_data_path
+INDEX_DIR = settings.database_path.parent
+DATABASE_PATH = settings.database_path
+VECTOR_METADATA_PATH = settings.vector_metadata_path
+VECTOR_INDEX_PATH = settings.vector_index_path
 EVALUATION_DIR = PROJECT_ROOT / "data" / "evaluation"
-CONFIG_PATH = PROJECT_ROOT / "config" / "rrf_config.json"
-TRACE_DIR = PROJECT_ROOT / "artifacts" / "traces"
-PAPER_CACHE_DIR = PROJECT_ROOT / "artifacts" / "paper_cache"
+CONFIG_PATH = settings.rrf_config_path
+TRACE_DIR = settings.trace_dir
+PAPER_CACHE_DIR = settings.paper_cache_dir

@@ -2,30 +2,20 @@ import json
 import os
 import re
 import sqlite3
+from abc import ABC, abstractmethod
+from contextlib import closing
 from pathlib import Path
 
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-try:
-    from dotenv import load_dotenv
+from .config import settings
+from .paths import CONFIG_PATH, DATABASE_PATH, TRACE_DIR, VECTOR_INDEX_PATH
+from .paths import VECTOR_METADATA_PATH
 
-    load_dotenv()
-except ImportError:
-    pass
-
-from .paths import CONFIG_PATH, DATABASE_PATH as DEFAULT_DATABASE_PATH
-from .paths import TRACE_DIR, VECTOR_INDEX_PATH as DEFAULT_VECTOR_INDEX_PATH
-from .paths import VECTOR_METADATA_PATH as DEFAULT_VECTOR_METADATA_PATH
-
-DATABASE_PATH = Path(os.environ.get("RAG_DATABASE_PATH", DEFAULT_DATABASE_PATH))
-VECTOR_METADATA_PATH = Path(
-    os.environ.get("VECTOR_METADATA_PATH", DEFAULT_VECTOR_METADATA_PATH)
-)
-VECTOR_INDEX_PATH = Path(os.environ.get("VECTOR_INDEX_PATH", DEFAULT_VECTOR_INDEX_PATH))
-HNSW_EF_SEARCH = 50
-MODEL = "gpt-4o-mini"
+HNSW_EF_SEARCH = settings.hnsw_ef_search
+MODEL = settings.chat_model
 MODEL_PRICING_PER_MILLION = {
     "gpt-4o-mini": {
         "input": 0.15,
@@ -62,16 +52,35 @@ class Trace:
             file.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
 
 
+class SearchBackend(ABC):
+    """The small retrieval seam used by the RAG service and evaluations."""
+
+    @abstractmethod
+    def search(self, query, k=5):
+        raise NotImplementedError
+
+
+class SQLiteFTSBackend(SearchBackend):
+    def __init__(self, db_path=DATABASE_PATH):
+        self.db_path = db_path
+
+    def search(self, query, k=5):
+        return ResearchAssistant(
+            db_path=self.db_path, k=k, search_method="text"
+        ).search(query)
+
+
 class ResearchAssistant:
     def __init__(
         self,
         db_path=DATABASE_PATH,
-        k=5,
+        k=settings.result_count,
         model=MODEL,
         trace_path=TRACE_DIR / "traces.jsonl",
         system_prompt=SYSTEM_PROMPT,
         search_method=None,
         hybrid_search=None,
+        search_backend=None,
     ):
         self.db_path = db_path
         if model != MODEL:
@@ -80,10 +89,8 @@ class ResearchAssistant:
         self.model = model
         self.trace_path = trace_path
         self.system_prompt = system_prompt
-        self.search_method = search_method or os.environ.get(
-            "RAG_SEARCH_METHOD", "hybrid"
-        )
-        self.hybrid_search = hybrid_search
+        self.search_method = search_method or settings.search_method
+        self.hybrid_search = search_backend or hybrid_search
         self.trace = None
         self.last_usage = empty_usage(model)
 
@@ -92,7 +99,7 @@ class ResearchAssistant:
             if latest:
                 raise ValueError("latest=True is only supported by text search.")
             if self.hybrid_search is None:
-                self.hybrid_search = build_hybrid_search(db_path=self.db_path)
+                self.hybrid_search = build_search_backend(db_path=self.db_path)
             return self.hybrid_search.search(query, k=self.k)
         if self.search_method != "text":
             raise ValueError("search_method must be 'text' or 'hybrid'.")
@@ -114,7 +121,7 @@ class ResearchAssistant:
             else "bm25(documents), submitted_date DESC"
         )
         params.append(self.k)
-        with sqlite3.connect(self.db_path) as connection:
+        with closing(sqlite3.connect(self.db_path)) as connection:
             rows = connection.execute(
                 f"""
                 SELECT paper_id, title, text, primary_category, all_categories,
@@ -173,7 +180,7 @@ class ResearchAssistant:
                 {"role": "developer", "content": self.system_prompt},
                 {"role": "user", "content": prompt},
             ],
-            max_output_tokens=400,
+            max_output_tokens=settings.max_answer_tokens,
         )
         self.last_usage = calculate_usage(response, self.model)
         return response.output_text
@@ -274,7 +281,7 @@ class VectorSearch:
         ]
 
 
-class HybridSearch:
+class HybridSearch(SearchBackend):
     """Fuse FTS5 and vector rankings using Reciprocal Rank Fusion (RRF)."""
 
     def __init__(
@@ -283,10 +290,10 @@ class HybridSearch:
         vector_path=VECTOR_INDEX_PATH,
         vector_metadata_path=VECTOR_METADATA_PATH,
         vector_search=None,
-        candidate_k=20,
-        rrf_constant=60,
-        text_weight=0.5,
-        vector_weight=0.5,
+        candidate_k=settings.rrf_candidate_k,
+        rrf_constant=settings.rrf_constant,
+        text_weight=settings.rrf_text_weight,
+        vector_weight=settings.rrf_vector_weight,
     ):
         self.db_path = db_path
         self.vector_search = vector_search or VectorSearch(
@@ -326,7 +333,7 @@ class HybridSearch:
             return []
 
         placeholders = ",".join("?" for _ in paper_ids)
-        with sqlite3.connect(self.db_path) as connection:
+        with closing(sqlite3.connect(self.db_path)) as connection:
             rows = connection.execute(
                 f"""
                 SELECT paper_id, title, text, primary_category, all_categories,
@@ -381,11 +388,19 @@ def build_hybrid_search(
         vector_path=vector_path,
         vector_metadata_path=vector_metadata_path,
         vector_search=vector_search,
-        candidate_k=config.get("candidate_k", 20),
-        rrf_constant=config.get("rrf_constant", 60),
-        text_weight=config.get("text_weight", 0.5),
-        vector_weight=config.get("vector_weight", 0.5),
+        candidate_k=config.get("candidate_k", settings.rrf_candidate_k),
+        rrf_constant=config.get("rrf_constant", settings.rrf_constant),
+        text_weight=config.get("text_weight", settings.rrf_text_weight),
+        vector_weight=config.get("vector_weight", settings.rrf_vector_weight),
     )
+
+
+def build_search_backend(backend=settings.search_backend, **kwargs):
+    if backend == "sqlite_faiss":
+        return build_hybrid_search(**kwargs)
+    if backend == "sqlite_fts":
+        return SQLiteFTSBackend(kwargs.get("db_path", DATABASE_PATH))
+    raise ValueError("SEARCH_BACKEND must be 'sqlite_faiss' or 'sqlite_fts'.")
 
 
 def load_papers(paper_ids, db_path=DATABASE_PATH):
@@ -394,7 +409,7 @@ def load_papers(paper_ids, db_path=DATABASE_PATH):
     if not paper_ids:
         return []
     placeholders = ",".join("?" for _ in paper_ids)
-    with sqlite3.connect(db_path) as connection:
+    with closing(sqlite3.connect(db_path)) as connection:
         rows = connection.execute(
             f"""
             SELECT paper_id, title, text, primary_category, all_categories,

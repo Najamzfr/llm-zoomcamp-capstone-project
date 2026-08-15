@@ -3,6 +3,7 @@
 import csv
 import sqlite3
 import time
+from contextlib import closing
 from pathlib import Path
 
 from research_assistant.paths import DATABASE_PATH, SOURCE_DATA_PATH
@@ -58,10 +59,12 @@ def create_table(conn):
 def ingest(data_path=SOURCE_DATA_PATH, db_path=DATABASE_PATH, logger=None):
     started = time.perf_counter()
     rows = load_rows(data_path)
+    db_path = Path(db_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     if logger:
         logger.event("ingestion.loaded", rows=len(rows), data_path=str(data_path))
 
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         create_table(conn)
         conn.executemany(
             """
@@ -83,6 +86,7 @@ def ingest(data_path=SOURCE_DATA_PATH, db_path=DATABASE_PATH, logger=None):
                 for row in rows
             ],
         )
+        conn.commit()
 
     result = {"rows": len(rows), "database": str(db_path), "elapsed_ms": round((time.perf_counter() - started) * 1000, 2)}
     if logger:

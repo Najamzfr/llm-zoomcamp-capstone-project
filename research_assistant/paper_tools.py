@@ -12,23 +12,24 @@ import requests
 import tiktoken
 from sentence_transformers import SentenceTransformer
 
+from .config import settings
 from .paths import PAPER_CACHE_DIR
 
 CACHE_DIR = PAPER_CACHE_DIR
 PDF_DIR = CACHE_DIR / "pdfs"
 CHUNK_DIR = CACHE_DIR / "chunks"
-MAX_PAPERS = 3
-MAX_PDF_BYTES = 25 * 1024 * 1024
-MAX_PDF_PAGES = 100
-MAX_CHUNKS_PER_PDF = 500
-DOWNLOAD_TIMEOUT = 30
-DOWNLOAD_DELAY_SECONDS = 1
-CHUNK_TOKENS = 600
-CHUNK_OVERLAP = 80
-MAX_CHUNKS = 8
-MAX_CHUNKS_PER_PAPER = 4
-MAX_FULL_TEXT_TOKENS = 5_000
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+MAX_PAPERS = settings.max_papers
+MAX_PDF_BYTES = settings.max_pdf_bytes
+MAX_PDF_PAGES = settings.max_pdf_pages
+MAX_CHUNKS_PER_PDF = settings.max_chunks_per_pdf
+DOWNLOAD_TIMEOUT = settings.download_timeout_seconds
+DOWNLOAD_DELAY_SECONDS = settings.download_delay_seconds
+CHUNK_TOKENS = settings.chunk_tokens
+CHUNK_OVERLAP = settings.chunk_overlap
+MAX_CHUNKS = settings.max_chunks
+MAX_CHUNKS_PER_PAPER = settings.max_chunks_per_paper
+MAX_FULL_TEXT_TOKENS = settings.max_full_text_tokens
+EMBEDDING_MODEL = settings.embedding_model
 USER_AGENT = "ResearchPaperRAG/1.0 (educational project)"
 
 

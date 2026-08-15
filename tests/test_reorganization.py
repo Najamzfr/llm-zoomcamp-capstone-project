@@ -30,3 +30,4 @@ class ReorganizationTests(unittest.TestCase):
             self.assertEqual(result["rows"], 1)
             with sqlite3.connect(database_path) as connection:
                 self.assertEqual(connection.execute("SELECT count(*) FROM documents").fetchone()[0], 1)
+            connection.close()
