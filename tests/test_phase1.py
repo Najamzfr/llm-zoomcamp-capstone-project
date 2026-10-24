@@ -57,6 +57,19 @@ class PhaseOneTests(unittest.TestCase):
             )
             self.assertEqual(backend.search("neural", 2)[0]["paper_id"], "two")
 
+    def test_full_text_excerpts_are_labelled_with_source_numbers(self):
+        from research_assistant.paper_tools import PaperTools
+
+        tools = PaperTools()
+        context = tools._limited_context(
+            [
+                {"title": "B", "paper_id": "pb", "page": 3, "text": "beta", "source": 4},
+                {"title": "A", "paper_id": "pa", "page": 1, "text": "alpha"},
+            ]
+        )
+        self.assertTrue(context.startswith("[4] B (paper_id: pb; page: 3)"))
+        self.assertIn("[2] A (paper_id: pa; page: 1)", context)
+
     def test_backend_factory_accepts_only_local_backends(self):
         self.assertIsInstance(build_search_backend("sqlite_fts"), SQLiteFTSBackend)
         with self.assertRaisesRegex(ValueError, "SEARCH_BACKEND"):

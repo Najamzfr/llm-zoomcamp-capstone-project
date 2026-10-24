@@ -34,5 +34,11 @@ the repository's `uv.lock` because it sits next to the entry file.
 - Prometheus/Grafana monitoring is for the local FastAPI app; on the cloud build use LangSmith traces
   and the 👍/👎 feedback recorded there.
 - Run it locally: `uv run --with "streamlit>=1.50" streamlit run deploy/streamlit_app.py`.
-- Look and feel: chat layout with a live research-progress panel; fonts, colours and light/dark
-  palettes live in `.streamlit/config.toml` (requires Streamlit 1.50+, pinned in `deploy/requirements.txt`).
+- Look and feel (research-tool redesign): left-aligned empty state with sample questions, live
+  research steps with counts, answers with a short-answer box, comparison tables for "compare/vs"
+  questions, clickable citation chips that highlight their source card, a sources rail (chip row on
+  phones), Copy / BibTeX export / Helpful actions, question history and corpus scope in the sidebar,
+  and category + date filters. Theme tokens and fonts live in `.streamlit/config.toml`; formatting
+  helpers in `research_assistant/presentation.py`. Requires Streamlit 1.50+.
+- Citations: full-text excerpts are labelled with their paper's source number, so `[n]` always
+  points at source card n.

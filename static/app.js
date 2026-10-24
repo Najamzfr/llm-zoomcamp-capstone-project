@@ -391,7 +391,7 @@ els.form.addEventListener("submit", async (event) => {
     const papers = result.retrieved_papers || [];
     els.stage.textContent = STAGE_LABELS[result.answer_stage] || "Answer";
     els.stage.className = `badge ${result.answer_stage || ""}`;
-    renderAnswer(result.answer, papers.length, result.answer_stage !== "full_text");
+    renderAnswer(result.answer, papers.length, true);  // full-text excerpts are labelled with paper source numbers too
     renderPapers(papers);
     renderDetails(result);
     resetFeedback();

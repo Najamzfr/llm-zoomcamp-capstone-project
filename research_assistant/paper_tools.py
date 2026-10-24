@@ -201,6 +201,12 @@ class PaperTools:
         scores = embeddings @ query_vector
         order = np.argsort(scores)[::-1]
 
+        # Excerpts are labelled with their paper's source number (search rank), so
+        # citations in full-text answers point at the same sources as abstract answers.
+        source_numbers = {
+            paper["paper_id"]: paper.get("rank", position)
+            for position, paper in enumerate(selected, start=1)
+        }
         retrieved = []
         per_paper = {}
         for index in order:
@@ -209,6 +215,7 @@ class PaperTools:
             if per_paper.get(paper_id, 0) >= MAX_CHUNKS_PER_PAPER:
                 continue
             chunk["score"] = float(scores[index])
+            chunk["source"] = source_numbers.get(paper_id)
             retrieved.append(chunk)
             per_paper[paper_id] = per_paper.get(paper_id, 0) + 1
             if len(retrieved) == MAX_CHUNKS:
@@ -257,8 +264,9 @@ class PaperTools:
         for number, chunk in enumerate(chunks, start=1):
             separator = "\n\n" if parts else ""
             separator_tokens = self.encoding.encode(separator)
+            label = chunk.get("source") or number
             header = (
-                f"[{number}] {chunk['title']} "
+                f"[{label}] {chunk['title']} "
                 f"(paper_id: {chunk['paper_id']}; page: {chunk['page']})\n"
             )
             header_tokens = self.encoding.encode(header)

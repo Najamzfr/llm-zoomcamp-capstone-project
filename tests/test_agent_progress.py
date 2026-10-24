@@ -15,7 +15,11 @@ PAPERS = [
 
 
 class StubSearch:
-    def search(self, query, k=5):
+    def __init__(self):
+        self.filters = None
+
+    def search(self, query, k=5, filters=None):
+        self.filters = filters
         return list(PAPERS)
 
 
@@ -49,7 +53,7 @@ class AgentProgressTests(unittest.TestCase):
     def test_abstract_path_events(self):
         result, events = self.run_agent({"needs_full_text": False, "reason": "enough"})
         self.assertEqual([name for name, _ in events], ["searched", "routed", "drafted", "checked"])
-        self.assertEqual(events[0][1], {"papers": 3})
+        self.assertEqual(events[0][1], {"papers": 3, "candidates": 3})
         self.assertFalse(events[1][1]["needs_full_text"])
         self.assertEqual(result["answer_stage"], "abstract")
 
@@ -71,6 +75,12 @@ class AgentProgressTests(unittest.TestCase):
 
         agent = make_agent({"needs_full_text": False}, {"status": "pass"})
         self.assertEqual(agent.run("question", on_progress=explode)["answer"], "abstract answer [1]")
+
+    def test_filters_reach_search_and_excerpts_returned(self):
+        agent = make_agent({"needs_full_text": True, "selected_paper_ids": ["p1"]}, {"status": "pass"})
+        result = agent.run("question", filters={"categories": ["cs.CL"]})
+        self.assertEqual(agent.hybrid.filters, {"categories": ["cs.CL"]})
+        self.assertEqual(result["excerpts"], {"p1": "evidence"})
 
     def test_without_callback(self):
         agent = make_agent({"needs_full_text": False}, {"status": "pass"})

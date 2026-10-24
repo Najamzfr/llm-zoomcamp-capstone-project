@@ -2,14 +2,16 @@
 
 Deploy settings: main file `deploy/streamlit_app.py`, Python 3.12, secrets as in deploy/README.md.
 Locally: `uv run --with "streamlit>=1.50" streamlit run deploy/streamlit_app.py`.
-Theme (fonts, colours, light/dark): `.streamlit/config.toml`.
+Theme tokens and fonts: `.streamlit/config.toml`. Formatting helpers: research_assistant/presentation.py.
 """
 
 import html
 import os
+import sqlite3
 import sys
 import time
 import uuid
+from contextlib import closing
 from pathlib import Path
 
 import streamlit as st
@@ -34,99 +36,198 @@ _load_secrets_into_env()
 
 from api import AskLimiter, _response  # noqa: E402  (reuse the API's response shape and limiter)
 from research_assistant.config import settings  # noqa: E402
+from research_assistant.presentation import (  # noqa: E402
+    abstract_excerpt,
+    bibtex,
+    clean_excerpt,
+    format_date,
+    link_citations,
+    period_start,
+    short_title,
+    shorten,
+    split_short_answer,
+)
 from research_assistant.tracing import send_feedback  # noqa: E402
 
-REPO_URL = "https://github.com/Najamzfr/llm-zoomcamp-capstone-project"
-STAGE_LABELS = {
-    "abstract": "From abstracts",
-    "full_text": "From full text",
-    "abstract_fallback": "Abstract fallback",
-}
-EXAMPLES = [
-    "How is retrieval-augmented generation evaluated?",
-    "Recent methods for reducing LLM hallucinations",
-    "Compare approaches to efficient fine-tuning",
-    "Which benchmarks are used to evaluate LLM agents?",
+SAMPLES = [
+    ("How is retrieval-augmented generation evaluated?", "Survey · metrics and benchmarks"),
+    ("Compare approaches to efficient fine-tuning", "Comparison table"),
+    ("Recent methods for reducing LLM hallucinations", "Survey · 2026 papers"),
+    ("Which benchmarks are used to evaluate LLM agents?", "List with sources"),
 ]
-USER_AVATAR = ":material/person:"
-ASSISTANT_AVATAR = ":material/auto_awesome:"
+PERIODS = ["All dates", "Since Jan 2026", "Last month"]
 
-st.set_page_config(page_title="Paper Scout", page_icon="📄", layout="centered")
+st.set_page_config(page_title="Paper Scout", page_icon=":material/article:", layout="wide")
 
-st.markdown(
-    """
-    <style>
-      .block-container { max-width: 860px; padding-top: 2.5rem; padding-bottom: 6rem; }
-      footer { visibility: hidden; }
+CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+:root { --paper:#f7f6f3; --surface:#ffffff; --sunk:#efede8; --line:#e2dfd8; --ink:#1f1d1a;
+        --ink2:#5b574f; --accent:#1d4ed8; --accent-soft:#e3eafc; --verified:#1a7f4b; }
+.block-container { max-width: 1180px; padding-top: 2.6rem; padding-bottom: 2rem; }
+footer, [data-testid="stStatusWidget"], [class*="viewerBadge"] { visibility: hidden; }
+h1, h2, h3 { font-family: 'Newsreader', Georgia, serif !important; font-weight: 500 !important; letter-spacing: -0.01em; }
 
-      /* Hero (empty state) */
-      .ps-hero { text-align: center; padding: 2.2rem 0 1.4rem; }
-      .ps-logo { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 16px; display: grid;
-                 place-items: center; font-size: 26px; color: #fff;
-                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                 box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35); }
-      .ps-title { font-size: 2.4rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.03em; margin: 0;
-                  background: linear-gradient(135deg, #6366f1 10%, #a855f7 90%);
-                  -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .ps-sub { opacity: 0.72; font-size: 1.05rem; margin: 0.4rem 0 1.1rem; }
-      .ps-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-      .ps-chip { font-size: 0.8rem; padding: 5px 12px; border-radius: 999px;
-                 border: 1px solid rgba(128, 128, 128, 0.25); background: rgba(128, 128, 128, 0.06); }
-      .ps-try { text-align: center; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em;
-                opacity: 0.6; margin: 1.6rem 0 0.4rem; }
+/* Empty state */
+.ps-lead { font-size: 1.15rem; line-height: 1.6; color: var(--ink2); max-width: 64ch; margin: -0.4rem 0 1.4rem; }
+[class*="st-key-sample"] button { background: var(--surface); border: 1px solid var(--line); min-height: 92px;
+  justify-content: flex-start; text-align: left; padding: 14px 16px; align-items: flex-start; }
+[class*="st-key-sample"] button:hover { border-color: var(--ink2); background: var(--surface); }
+[class*="st-key-sample"] button p, [class*="st-key-sample"] button div { font-size: 1rem; line-height: 1.45; text-align: left;
+  white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+[class*="st-key-sample"] button > div, [class*="st-key-sample"] [data-testid="stMarkdownContainer"] { width: 100%; text-align: left; justify-content: flex-start; }
+[data-testid="stChatInput"] > div { background: var(--surface) !important; border: 1px solid var(--line); }
+[data-testid="stChatInput"] textarea { color: var(--ink); }
 
-      @media (max-width: 640px) { .ps-hero { padding-top: 3.6rem; } .ps-title { font-size: 2rem; } }
+/* Question header */
+.q-title { font-family: 'Newsreader', Georgia, serif; font-size: 30px; line-height: 1.2; font-weight: 500;
+           color: var(--ink); margin: 0.6rem 0 0.35rem; scroll-margin-top: 80px; }
+.q-meta { color: var(--ink2); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 1rem; }
+.q-meta .ok { color: var(--verified); font-weight: 500; }
+.ps-sep { border: none; border-top: 1px solid var(--line); margin: 2.2rem 0 1rem; }
 
-      /* Answer header */
-      .ps-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 0.35rem; font-size: 0.8rem; }
-      .ps-badge { font-weight: 600; padding: 2px 10px; border-radius: 999px;
-                  background: rgba(99, 102, 241, 0.14); color: #6366f1; }
-      .ps-badge.full_text { background: rgba(22, 163, 74, 0.14); color: #16a34a; }
-      .ps-badge.abstract_fallback { background: rgba(217, 119, 6, 0.14); color: #d97706; }
-      .ps-time { opacity: 0.6; }
+/* Live progress */
+.steps { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); max-width: 720px; }
+.step { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 15px; }
+.step:first-child { border-top: none; }
+.step .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; border: 2px solid var(--line); }
+.step.done .dot { background: var(--verified); border-color: var(--verified); }
+.step.active .dot { border-color: var(--accent); border-right-color: transparent; animation: ps-spin 0.9s linear infinite; }
+.step.pending { color: var(--ink2); }
+.step .count { margin-left: auto; color: var(--ink2); font-size: 13.5px; text-align: right; }
+.skeleton { height: 14px; border-radius: 7px; background: var(--sunk); margin: 14px 0; max-width: 720px; }
+@keyframes ps-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .step.active .dot { animation: none; } }
 
-      /* Source cards */
-      .ps-section { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
-                    opacity: 0.6; margin: 1rem 0 0.5rem; }
-      .ps-sources { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
-      a.ps-card { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px;
-                  border: 1px solid rgba(128, 128, 128, 0.22); background: rgba(128, 128, 128, 0.04);
-                  color: inherit !important; text-decoration: none !important;
-                  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
-      a.ps-card:hover { transform: translateY(-2px); border-color: #6366f1;
-                        box-shadow: 0 8px 22px rgba(99, 102, 241, 0.16); }
-      .ps-card-top { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; }
-      .ps-num { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 7px;
-                font-weight: 700; background: rgba(99, 102, 241, 0.14); color: #6366f1; }
-      .ps-cat { font-family: ui-monospace, Consolas, monospace; padding: 1px 6px; border-radius: 5px;
-                background: rgba(128, 128, 128, 0.12); }
-      .ps-date { margin-left: auto; opacity: 0.6; }
-      .ps-card-title { font-weight: 600; font-size: 0.9rem; line-height: 1.35; }
-      .ps-open { font-size: 0.75rem; color: #6366f1; margin-top: auto; }
+/* Answer */
+[class*="st-key-tldr"] { background: var(--sunk); border-radius: 8px; padding: 14px 18px; }
+[class*="st-key-tldr"] p { font-size: 16px; line-height: 1.6; margin: 0; }
+[class*="st-key-prose"] p, [class*="st-key-prose"] li { font-family: 'Newsreader', Georgia, serif; font-size: 18px; line-height: 1.6; max-width: 66ch; }
+[class*="st-key-prose"] h4 { font-family: 'IBM Plex Sans', sans-serif !important; font-size: 16px; font-weight: 600 !important; margin-top: 1.2rem; }
+[class*="st-key-prose"] table { font-size: 14.5px; border-collapse: collapse; width: 100%; }
+[class*="st-key-prose"] th { text-align: left; font-weight: 600; color: var(--ink2); }
+[class*="st-key-prose"] th, [class*="st-key-prose"] td { border: none; border-bottom: 1px solid var(--line); padding: 9px 12px 9px 0; vertical-align: top; }
+a.cite { font: 600 12px 'IBM Plex Sans', sans-serif; color: var(--accent) !important; background: var(--accent-soft);
+         border-radius: 4px; padding: 1px 5px; margin: 0 1px; text-decoration: none !important; vertical-align: 2px; cursor: pointer; }
+a.cite:hover { background: var(--accent); color: #fff !important; }
 
-      /* Compact stats */
-      .ps-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 0.3rem 0 0.6rem; }
-      .ps-stat { padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(128, 128, 128, 0.2);
-                 background: rgba(128, 128, 128, 0.05); }
-      .ps-stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.6; }
-      .ps-stat-value { font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Sources */
+.src-label { color: var(--ink2); font-size: 14px; margin: 0.2rem 0 0.5rem; }
+.src { border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; margin-bottom: 8px; background: var(--surface);
+       scroll-margin-top: 90px; transition: background 0.2s, border-color 0.2s; }
+.src.is-target { border-color: var(--accent); background: var(--accent-soft); }
+.src-top { font-size: 13px; color: var(--ink2); }
+.src-top b { color: var(--accent); margin-right: 6px; }
+.src-title { font-weight: 600; font-size: 14.5px; line-height: 1.35; margin: 4px 0; color: var(--ink); }
+.src-quote { font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink2); margin-bottom: 4px; }
+.src a { font-size: 13.5px; color: var(--accent) !important; }
+.src-row { display: none; gap: 8px; overflow-x: auto; padding: 10px 0 4px; }
+.src-chip { flex: none; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; background: var(--surface);
+            font-size: 14px; color: var(--ink) !important; text-decoration: none !important; white-space: nowrap; }
+.src-chip b { color: var(--accent); margin-right: 4px; }
+.src-chip.is-target { border-color: var(--accent); background: var(--accent-soft); }
 
-      /* Sidebar */
-      .ps-side-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; }
-      .ps-side-brand span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
-                            color: #fff; background: linear-gradient(135deg, #6366f1, #8b5cf6); }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+/* Actions */
+.ps-copy { display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border: 1px solid var(--line);
+           border-radius: 8px; background: var(--surface); font-size: 14px; cursor: pointer; user-select: none; }
+.ps-copy:hover { border-color: var(--ink2); }
+.ps-raw { display: none; }
+
+/* Sidebar */
+.ps-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 0.8rem; }
+.ps-mark { width: 30px; height: 30px; border-radius: 6px; background: var(--ink); color: #fff; display: grid; place-items: center;
+           font: 500 19px 'Newsreader', Georgia, serif; }
+.ps-name { font: 500 22px 'Newsreader', Georgia, serif; color: var(--ink); }
+.ps-side-label { color: var(--ink2); font-size: 14px; margin: 0.8rem 0 0.2rem; }
+[class*="st-key-hist"] button { justify-content: flex-start; text-align: left; padding: 6px 8px; }
+[class*="st-key-hist"] button > div, [class*="st-key-hist"] [data-testid="stMarkdownContainer"] { width: 100%; text-align: left; justify-content: flex-start; }
+[class*="st-key-hist"] button p { font-size: 14.5px; line-height: 1.4; }
+.ps-scope { font-size: 14px; line-height: 1.55; color: var(--ink2); }
+.ps-scope b { color: var(--ink); }
+
+/* Filters above the composer */
+[class*="st-key-filters"] { gap: 8px; flex-wrap: wrap; }
+[class*="st-key-filters"] [data-testid="stButtonGroup"] > div { flex-wrap: wrap; }
+[class*="st-key-filters"] p { font-size: 14px; }
+
+/* Medium widths: the 3:1 rail would be too narrow, so stack it under the answer as a card grid. */
+@media (max-width: 1050px) {
+  [data-testid="stHorizontalBlock"]:has([class*="st-key-rail"]) { flex-direction: column; }
+  [data-testid="stHorizontalBlock"]:has([class*="st-key-rail"]) > [data-testid="stColumn"] { width: 100% !important; flex: 1 1 auto !important; }
+  [class*="st-key-rail"] .src-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+}
+@media (max-width: 640px) {
+  [class*="st-key-rail"] { display: none; }
+  .src-row { display: flex; }
+  .q-title { font-size: 25px; }
+  [class*="st-key-prose"] p, [class*="st-key-prose"] li { font-size: 17px; }
+  .block-container { padding-top: 3.4rem; }
+}
+</style>
+"""
+st.html(CSS)
+
+# Delegated click handling on the page: citation chips highlight and scroll to their
+# source card (the visible one: rail on desktop, chip row on phones); "Copy answer" copies text.
+CLICK_JS = """
+<script>
+(() => {  // own scope: Streamlit re-runs this snippet on every rerun
+const doc = document;
+if (!doc.__paperScout) {
+  doc.__paperScout = true;
+  doc.addEventListener('click', (event) => {
+    const cite = event.target.closest('a.cite');
+    if (cite) {
+      event.preventDefault();
+      const key = cite.dataset.src;
+      doc.querySelectorAll('.is-target').forEach((el) => el.classList.remove('is-target'));
+      const targets = [...doc.querySelectorAll('[data-src="' + key + '"]')]
+        .filter((el) => !el.classList.contains('cite') && el.offsetParent !== null);
+      targets.forEach((el) => el.classList.add('is-target'));
+      if (targets[0]) targets[0].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      return;
+    }
+    const copy = event.target.closest('[data-copy]');
+    if (copy) {
+      const source = doc.getElementById(copy.dataset.copy);
+      const text = source ? source.textContent : '';
+      const done = () => { const old = copy.textContent; copy.textContent = 'Copied'; setTimeout(() => { copy.textContent = old; }, 1500); };
+      const fallback = () => {
+        const area = doc.createElement('textarea'); area.value = text; doc.body.appendChild(area);
+        area.select(); try { doc.execCommand('copy'); done(); } catch (e) {} area.remove();
+      };
+      const clip = navigator.clipboard;
+      if (clip && clip.writeText) { clip.writeText(text).then(done, fallback); } else { fallback(); }
+    }
+  }, true);
+}
+const scrollTarget = "__SCROLL__";
+// Repeat briefly: the chat-input layout re-pins the page to the bottom while a rerun settles.
+if (scrollTarget) [300, 900, 1600].forEach((delay) => setTimeout(() => {
+  const el = doc.getElementById(scrollTarget); if (el) el.scrollIntoView({ block: 'start' });
+}, delay));
+})();
+</script>
+"""
 
 
 @st.cache_resource(show_spinner="Preparing the paper index…")
-def get_agent():
+def ensure_index():
     if not settings.database_path.exists():
         from scripts.ingest import ingest
 
         ingest()  # ~1 s: builds the SQLite FTS5 catalogue from data/source/data.csv
+    with closing(sqlite3.connect(settings.database_path)) as connection:
+        total = connection.execute("SELECT count(*) FROM documents").fetchone()[0]
+        first, last = connection.execute("SELECT min(submitted_date), max(submitted_date) FROM documents").fetchone()
+        categories = [row[0] for row in connection.execute(
+            "SELECT primary_category FROM documents GROUP BY 1 ORDER BY count(*) DESC LIMIT 6")]
+    return {"total": total, "first": first, "last": last, "categories": categories}
+
+
+@st.cache_resource(show_spinner=False)
+def get_agent():
+    ensure_index()
     from research_assistant.agent import AdaptiveResearchAgent
 
     return AdaptiveResearchAgent(trace_path=None)
@@ -140,234 +241,292 @@ def get_limiter():
 
 state = st.session_state
 state.setdefault("messages", [])
-state.setdefault("rated", set())
-state.setdefault("stats", {"questions": 0, "cost": 0.0})
+state.setdefault("history", [])
+state.setdefault("rated", {})
+corpus = ensure_index()
+TOTAL = f"{corpus['total']:,}"
 
 
-def _queue_example():
-    state["pending"] = state.get("example_pick")
-    state["example_pick"] = None
+def month_label(value):
+    return format_date(value).split(" ", 1)[-1] if value else ""
 
 
-def describe(event, data):
-    """Turn an agent progress event into a short, human sentence."""
-    if event == "searched":
-        return f"Found {data.get('papers', 0)} candidate papers with keyword + vector search"
-    if event == "routed":
-        if data.get("needs_full_text"):
-            return "Abstracts aren't detailed enough — reading the full papers"
-        return "The abstracts cover this — answering from them"
-    if event == "fetching_full_text":
-        return f"Downloading and chunking {data.get('papers', 0)} PDFs"
-    if event == "full_text_ready":
-        return f"Ranked {data.get('chunks', 0)} relevant excerpts ({data.get('tokens', 0):,} tokens)"
-    if event == "full_text_failed":
-        return "Full text unavailable — falling back to the abstracts"
-    if event == "drafted":
-        return "Drafted a cited answer"
-    if event == "checked":
-        status = data.get("status")
-        if status == "pass":
-            return "Answer verified against the evidence"
-        if status == "needs_full_text":
-            return "Verifier wants more detail — escalating to full text"
-        return "Some details aren't fully supported — noted in the answer"
-    return event
-
-
-def source_cards(papers):
-    cards = []
-    for number, paper in enumerate(papers, start=1):
-        title = html.escape(paper.get("title") or "Untitled paper")
-        category = html.escape(str(paper.get("category") or ""))
-        date = html.escape(str(paper.get("published") or "")[:10])
-        url = paper.get("url") or ""
-        href = html.escape(url, quote=True) if url.startswith(("https://", "http://")) else "#"
-        cards.append(
-            f"<a class='ps-card' href='{href}' target='_blank' rel='noopener noreferrer'>"
-            f"<div class='ps-card-top'><span class='ps-num'>{number}</span>"
-            + (f"<span class='ps-cat'>{category}</span>" if category else "")
-            + (f"<span class='ps-date'>{date}</span>" if date else "")
-            + f"</div><div class='ps-card-title'>{title}</div>"
-            "<div class='ps-open'>Open on arXiv ↗</div></a>"
-        )
-    return "<div class='ps-sources'>" + "".join(cards) + "</div>"
-
-
-def stat_grid(items):
-    return "<div class='ps-stats'>" + "".join(
-        f"<div class='ps-stat'><div class='ps-stat-label'>{html.escape(label)}</div>"
-        f"<div class='ps-stat-value'>{html.escape(value)}</div></div>"
-        for label, value in items
-    ) + "</div>"
-
-
-def render_assistant(message):
-    kind = message.get("kind")
-    if kind == "warning":
-        st.warning(message["content"], icon=":material/hourglass_top:")
+def ask(question):
+    """Queue a question; it is answered on the next run so the page re-renders without the welcome block."""
+    question = (question or "").strip()
+    if not question:
         return
-    if kind == "error":
-        st.error(message["content"], icon=":material/error:")
+    filters = {}
+    if state.get("cat_filter"):
+        filters["categories"] = list(state["cat_filter"])
+    since = {"Since Jan 2026": "2026-01-01", "Last month": period_start("Last month", corpus["last"])}.get(
+        state.get("period_filter") or "All dates")
+    if since:
+        filters["since"] = since
+    state["messages"].append({"id": uuid.uuid4().hex[:8], "question": question, "status": "queued", "filters": filters})
+    if question in state["history"]:
+        state["history"].remove(question)
+    state["history"].append(question)
+
+
+# ---------------------------------------------------------------- progress view
+class Progress:
+    """Named research steps with counts, re-rendered into one placeholder as events arrive."""
+
+    def __init__(self, placeholder):
+        self.placeholder = placeholder
+        self.steps = [{"key": "search", "label": f"Searching {TOTAL} papers by keyword and meaning", "count": "", "state": "active"}]
+        self.read_full = 0
+        self.verified = None
+        self.render()
+
+    def _step(self, key):
+        return next((step for step in self.steps if step["key"] == key), None)
+
+    def start(self, key, label, count=""):
+        for step in self.steps:
+            if step["state"] == "active":
+                step["state"] = "done"
+        existing = self._step(key)
+        if existing:
+            existing.update(label=label, count=count, state="active")
+        else:
+            self.steps.append({"key": key, "label": label, "count": count, "state": "active"})
+
+    def finish(self, key, label, count=""):
+        step = self._step(key) or {"key": key}
+        if step not in self.steps:
+            self.steps.append(step)
+        step.update(label=label, count=count, state="done")
+
+    def on_event(self, event, data):
+        if event == "searched":
+            self.finish("search", f"Searched {TOTAL} papers by keyword and meaning", f"{data.get('candidates', 0)} matches")
+            self.start("rank", "Ranking the most relevant papers")
+        elif event == "routed":
+            self.finish("rank", "Ranked the most relevant papers", "abstracts suffice" if not data.get("needs_full_text") else "")
+            if data.get("needs_full_text"):
+                self.start("read", "Reading the full text")
+            else:
+                self.start("write", "Writing a cited answer")
+        elif event == "fetching_full_text":
+            titles = ", ".join(short_title(title, 2) for title in data.get("titles", [])[:3])
+            self.read_full = data.get("papers", 0)
+            self.start("read", f"Reading full text of {self.read_full} papers", html.escape(titles))
+        elif event == "full_text_ready":
+            self.finish("read", f"Read full text of {self.read_full} papers", f"{data.get('chunks', 0)} excerpts")
+            self.start("write", "Writing a cited answer")
+        elif event == "full_text_failed":
+            self.read_full = 0
+            self.finish("read", "Full text unavailable", "using abstracts")
+            self.start("write", "Writing a cited answer")
+        elif event == "drafted":
+            self.finish("write", "Wrote a cited answer")
+            self.start("check", "Checking each claim against its source")
+        elif event == "checked":
+            status = data.get("status")
+            self.verified = status == "pass"
+            label = {"pass": "verified", "needs_full_text": "needs full text"}.get(status, "partly supported")
+            self.finish("check", "Checked each claim against its source", label)
+        self.render()
+
+    def render(self):
+        rows = list(self.steps)
+        if not self._step("check"):
+            rows.append({"label": "Checking each claim against its source", "count": "–", "state": "pending"})
+        body = "".join(
+            f"<div class='step {row['state']}'><span class='dot'></span><span>{html.escape(row['label'])}</span>"
+            f"<span class='count'>{row['count']}</span></div>"
+            for row in rows
+        )
+        skeleton = "".join(f"<div class='skeleton' style='width:{w}%'></div>" for w in (92, 84, 61))
+        self.placeholder.html(f"<div class='steps'>{body}</div>{skeleton}")
+
+
+def run_question(message):
+    started = time.perf_counter()
+    if not get_limiter().allow():
+        message.update(status="limited")
+        return
+    progress = Progress(st.empty())
+    try:
+        result = get_agent().run(message["question"], on_progress=progress.on_event, filters=message["filters"] or None)
+    except Exception as error:  # friendly message instead of a stack trace
+        message.update(status="error", error=type(error).__name__)
+        return
+    response = _response(result, message["question"], uuid.uuid4().hex)
+    raw = {paper["paper_id"]: paper for paper in result.get("papers", [])}
+    excerpts = result.get("excerpts") or {}
+    for paper in response["retrieved_papers"]:
+        source = raw.get(paper["paper_id"], {})
+        paper["authors"] = source.get("authors", "")
+        paper["excerpt"] = clean_excerpt(excerpts.get(paper["paper_id"]), 150) or abstract_excerpt(source.get("text"), 150)
+    message.update(
+        status="done",
+        result=response,
+        trace_run_id=result.get("trace_run_id"),
+        seconds=time.perf_counter() - started,
+        read_full=progress.read_full if result.get("answer_stage") == "full_text" else 0,
+        verified=progress.verified,
+        steps=[f"{s['label']}{(' · ' + s['count']) if s['count'] else ''}" for s in progress.steps],
+    )
+
+
+# ---------------------------------------------------------------- answer view
+def source_html(prefix, papers):
+    rail, chips = [], []
+    for number, paper in enumerate(papers, start=1):
+        key = f"{prefix}-{number}"
+        title = html.escape(paper.get("title") or "Untitled paper")
+        url = paper.get("url") or ""
+        href = html.escape(url, quote=True) if url.startswith(("https://", "http://")) else ""
+        meta = " · ".join(html.escape(v) for v in (paper.get("category") or "", format_date(paper.get("published"))) if v)
+        quote = f"<div class='src-quote'>“{html.escape(paper['excerpt'])}”</div>" if paper.get("excerpt") else ""
+        link = f"<a href='{href}' target='_blank' rel='noopener noreferrer'>Open on arXiv</a>" if href else ""
+        rail.append(f"<div class='src' id='{key}' data-src='{key}'><div class='src-top'><b>{number}</b>{meta}</div>"
+                    f"<div class='src-title'>{title}</div>{quote}{link}</div>")
+        chips.append(f"<a class='src-chip' data-src='{key}' href='{href or '#'}' target='_blank' rel='noopener noreferrer'>"
+                     f"<b>{number}</b>{html.escape(short_title(paper.get('title')))}</a>")
+    return "".join(rail), "<div class='src-row'>" + "".join(chips) + "</div>"
+
+
+def render_message(message):
+    prefix = f"m{message['id']}"
+    st.html(f"<div class='q-title' id='q-{message['id']}'>{html.escape(message['question'])}</div>")
+    status = message["status"]
+    if status == "queued":
+        # Phase 1: draw the researching view and finish the run, which clears the previous page
+        # (Streamlit only removes leftover elements when a run ends). Phase 2 does the work.
+        Progress(st.empty())
+        state["start_research"] = message["id"]
+        return
+    if status == "running":
+        run_question(message)
+        st.rerun()
+    if status == "limited":
+        st.warning("This demo has reached its question limit. Please wait a minute and try again.")
+        return
+    if status == "error":
+        st.error(f"The research assistant could not answer ({message.get('error')}). Please try again.")
         return
 
     result = message["result"]
-    stage = result.get("answer_stage", "unknown")
-    stage_text = html.escape(STAGE_LABELS.get(stage, stage))
-    st.markdown(
-        f"<div class='ps-meta'><span class='ps-badge {html.escape(stage)}'>{stage_text}</span>"
-        f"<span class='ps-time'>{message.get('seconds', 0):.0f} s</span></div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(result.get("answer", ""))  # LLM text: Markdown only, no raw HTML
-
-    request_id = result.get("request_id")
-    rating = st.feedback("thumbs", key=f"fb-{request_id}")
-    if rating is not None and request_id not in state["rated"]:
-        state["rated"].add(request_id)
-        send_feedback(result.get("trace_run_id"), "up" if rating == 1 else "down")
-        st.toast("Thanks for the feedback!", icon=":material/favorite:")
-
     papers = result.get("retrieved_papers", [])
-    if papers:
-        st.markdown("<div class='ps-section'>Sources</div>" + source_cards(papers), unsafe_allow_html=True)
+    meta = [f"{len(papers)} papers"]
+    if message.get("read_full"):
+        meta.append(f"{message['read_full']} read in full")
+    verified = ("<span class='ok'>All claims verified</span>" if message.get("verified")
+                else "<span>Some claims not fully verified</span>")
+    filters = message.get("filters") or {}
+    scope = ", ".join(filters.get("categories", [])) + (f" since {format_date(filters['since'])}" if filters.get("since") else "")
+    st.html(f"<div class='q-meta'><span>{' · '.join(meta)}</span>{verified}<span>{message.get('seconds', 0):.0f} s</span>"
+            + (f"<span>Filtered: {html.escape(scope.strip())}</span>" if scope.strip() else "") + "</div>")
 
-    with st.expander("Research steps & usage", icon=":material/insights:"):
-        usage = result.get("usage", {})
-        st.markdown(
-            stat_grid(
-                [
-                    ("Stage", STAGE_LABELS.get(stage, stage)),
-                    ("Input tokens", f"{usage.get('input_tokens', 0):,}"),
-                    ("Output tokens", f"{usage.get('output_tokens', 0):,}"),
-                    ("Est. cost", f"${usage.get('estimated_cost_usd', 0) or 0:.4f}"),
-                ]
-            ),
-            unsafe_allow_html=True,
-        )
-        for step in message.get("steps", []):
-            st.markdown(f":material/check_small: {step}")
-        if stage == "full_text":
-            st.caption("In full-text answers, [n] refers to the numbered PDF excerpts, not the source cards.")
+    short, rest = split_short_answer(result.get("answer", ""))
+    rail_html, chip_row = source_html(prefix, papers)
+    left, right = st.columns([3, 1], gap="large")
+    with left:
+        if short:
+            with st.container(key=f"tldr-{prefix}"):
+                st.markdown(f"**Short answer.** {link_citations(short, prefix, len(papers))}", unsafe_allow_html=True)
+        st.html(chip_row)
+        with st.container(key=f"prose-{prefix}"):
+            st.markdown(link_citations(rest, prefix, len(papers)), unsafe_allow_html=True)
 
-
-def answer(question):
-    """Run the agent with a live progress panel and append the reply to the conversation."""
-    if not get_limiter().allow():
-        state["messages"].append(
-            {"role": "assistant", "kind": "warning",
-             "content": "The question limit for this demo was reached. Please wait a minute and try again."}
-        )
-        return
-    steps = []
-    started = time.perf_counter()
-    with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-        with st.status("Researching…", expanded=True) as status:
-
-            def on_progress(event, data):
-                line = describe(event, data)
-                steps.append(line)
-                status.update(label=line)
-                st.markdown(f":material/check_small: {line}")
-
-            try:
-                result = get_agent().run(question, on_progress=on_progress)
-            except Exception as error:  # friendly message instead of a stack trace
-                status.update(label="Something went wrong", state="error", expanded=False)
-                state["messages"].append(
-                    {"role": "assistant", "kind": "error",
-                     "content": f"The research assistant failed to answer ({type(error).__name__}). Please try again."}
-                )
-                return
-            seconds = time.perf_counter() - started
-            stage = STAGE_LABELS.get(result.get("answer_stage"), "Done")
-            status.update(label=f"Done in {seconds:.0f} s · {stage}", state="complete", expanded=False)
-
-    response = _response(result, question, uuid.uuid4().hex)
-    response["trace_run_id"] = result.get("trace_run_id")
-    state["messages"].append(
-        {"role": "assistant", "result": response, "steps": steps, "seconds": seconds}
-    )
-    state["stats"]["questions"] += 1
-    state["stats"]["cost"] += float(response.get("usage", {}).get("estimated_cost_usd") or 0)
+        raw_answer = html.escape(result.get("answer", ""))
+        rated = state["rated"].get(message["id"])
+        with st.container(horizontal=True, key=f"actions-{prefix}"):
+            st.html(f"<span class='ps-copy' role='button' tabindex='0' data-copy='raw-{prefix}'>Copy answer</span>"
+                    f"<pre class='ps-raw' id='raw-{prefix}'>{raw_answer}</pre>", width="content")
+            st.download_button("Export citations (BibTeX)", bibtex(papers), file_name="paper-scout-sources.bib",
+                               mime="application/x-bibtex", key=f"bib-{prefix}")
+            if rated:
+                st.caption("Thanks for the feedback.")
+            else:
+                for label, value in (("Helpful", "up"), ("Not helpful", "down")):
+                    if st.button(label, key=f"{value}-{prefix}"):
+                        state["rated"][message["id"]] = value
+                        send_feedback(message.get("trace_run_id"), value)
+                        st.rerun()
+        with st.expander("Details"):
+            usage = result.get("usage", {})
+            st.markdown(
+                f"Tokens: {usage.get('input_tokens', 0):,} in · {usage.get('output_tokens', 0):,} out · "
+                f"Estimated cost: ${usage.get('estimated_cost_usd', 0) or 0:.4f}"
+            )
+            for step in message.get("steps", []):
+                st.markdown(f"- {step}")
+            st.caption("Each question is answered on its own; there is no chat memory.")
+    with right:
+        with st.container(key=f"rail-{prefix}"):
+            st.html(f"<div class='src-label'>Sources</div><div class='src-grid'>{rail_html}</div>")
 
 
-# ---------- sidebar ----------
+# ---------------------------------------------------------------- sidebar
 with st.sidebar:
-    st.markdown("<div class='ps-side-brand'><span>📄</span>Paper Scout</div>", unsafe_allow_html=True)
-    st.caption("Research assistant over 7,701 arXiv AI/ML papers (2025–2026).")
-    if st.button("New chat", icon=":material/edit_square:", width="stretch", type="primary"):
+    st.html("<div class='ps-brand'><div class='ps-mark'>P</div><div class='ps-name'>Paper Scout</div></div>")
+    if st.button("New question", type="primary" if not state["messages"] else "secondary", width="stretch"):
         state["messages"] = []
         st.rerun()
+    if state["history"]:
+        st.html("<div class='ps-side-label'>Recent</div>")
+        open_questions = {m["question"]: m["id"] for m in state["messages"]}
+        for index, question in enumerate(reversed(state["history"][-8:])):
+            if st.button(shorten(question, 60), key=f"hist-{index}", type="tertiary", width="stretch"):
+                if question in open_questions:
+                    state["scroll_to"] = f"q-{open_questions[question]}"
+                else:
+                    ask(question)
+                st.rerun()
     st.divider()
-    st.markdown(
-        stat_grid(
-            [
-                ("Questions", str(state["stats"]["questions"])),
-                ("Session cost", f"${state['stats']['cost']:.4f}"),
-            ]
-        ),
-        unsafe_allow_html=True,
+    st.html(
+        f"<div class='ps-scope'><b>{TOTAL}</b> arXiv papers<br>{html.escape(', '.join(corpus['categories'][:3]))} and more<br>"
+        f"{month_label(corpus['first'])} – {month_label(corpus['last'])}<br>"
+        "Each question is answered on its own; there is no chat memory.</div>"
     )
-    st.divider()
-    st.markdown(
-        "**How it works**\n\n"
-        "1. Hybrid search: SQLite FTS5 keywords + Qdrant vectors, fused with RRF\n"
-        "2. GPT-4o-mini decides if the abstracts are enough\n"
-        "3. If not, it reads the most relevant PDF excerpts\n"
-        "4. A verifier checks the answer against the evidence"
-    )
-    st.caption("Each question is answered independently; the assistant has no chat memory.")
-    st.divider()
-    st.markdown(f":material/code: [Source on GitHub]({REPO_URL})")
-    st.caption("FastAPI · Qdrant · fastembed · GPT-4o-mini · LangSmith")
 
 if not os.environ.get("OPENAI_API_KEY"):
     st.error("OPENAI_API_KEY is not configured. Add it to the app's secrets.")
     st.stop()
 
-# ---------- conversation ----------
+# ---------------------------------------------------------------- main
 if not state["messages"]:
-    st.markdown(
-        """
-        <div class="ps-hero">
-          <div class="ps-logo">📄</div>
-          <div class="ps-title">Paper Scout</div>
-          <div class="ps-sub">Ask anything about recent AI/ML research — get a cited answer in seconds.</div>
-          <div class="ps-chips">
-            <span class="ps-chip">🔎 Hybrid keyword + vector search</span>
-            <span class="ps-chip">📑 Reads full PDFs when needed</span>
-            <span class="ps-chip">✅ Every claim cited</span>
-          </div>
-          <div class="ps-try">Try one of these</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.markdown(f"# Ask {TOTAL} AI/ML papers a question.")
+    st.html(
+        f"<p class='ps-lead'>Answers are built from arXiv papers published {month_label(corpus['first'])} – "
+        f"{month_label(corpus['last'])}. Every claim links to the paper it came from.</p>"
     )
-    st.pills(
-        "Example questions",
-        EXAMPLES,
-        key="example_pick",
-        on_change=_queue_example,
-        label_visibility="collapsed",
-        width="stretch",
-    )
+    columns = st.columns(2)
+    for index, (question, hint) in enumerate(SAMPLES):
+        with columns[index % 2]:
+            if st.button(f"{question}  \n:gray[{hint}]", key=f"sample-{index}", width="stretch"):
+                ask(question)
+                st.rerun()
 
-for message in state["messages"]:
-    if message["role"] == "user":
-        with st.chat_message("user", avatar=USER_AVATAR):
-            st.markdown(message["content"])
-    else:
-        with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-            render_assistant(message)
+for position, message in enumerate(state["messages"]):
+    if position:
+        st.html("<hr class='ps-sep'>")
+    render_message(message)
+
+with st.container(key="filters", horizontal=True):
+    st.pills("Category", corpus["categories"], selection_mode="multi", key="cat_filter",
+             label_visibility="collapsed", help="Only search these arXiv categories (none selected = all)")
+    st.segmented_control("Period", PERIODS, default=PERIODS[0], key="period_filter", label_visibility="collapsed",
+                         help=f"Relative to the newest paper ({format_date(corpus['last'])})")
 
 typed = st.chat_input(
-    "Ask about methods, benchmarks or trends…", max_chars=settings.max_question_length
+    "Ask a follow-up as a new question…" if state["messages"] else "Ask about a method, benchmark or trend…",
+    max_chars=settings.max_question_length,
 )
-question = (typed or state.pop("pending", None) or "").strip()
-if question:
-    state["messages"].append({"role": "user", "content": question})
-    with st.chat_message("user", avatar=USER_AVATAR):
-        st.markdown(question)
-    answer(question)
+if typed:
+    ask(typed)
+    st.rerun()
+
+st.html(CLICK_JS.replace("__SCROLL__", state.pop("scroll_to", "") or ""), unsafe_allow_javascript=True)
+
+if state.get("start_research"):
+    message_id = state.pop("start_research")
+    for message in state["messages"]:
+        if message["id"] == message_id and message["status"] == "queued":
+            message["status"] = "running"
     st.rerun()

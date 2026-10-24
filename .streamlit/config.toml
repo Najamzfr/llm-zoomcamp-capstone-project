@@ -1,4 +1,6 @@
-# Theme for the Streamlit Cloud app (deploy/streamlit_app.py). Light/dark follow the visitor's system.
+# Theme for the Streamlit Cloud app (deploy/streamlit_app.py): calm "research tool" look.
+# Tokens: paper #f7f6f3, surface #ffffff, sunk #efede8, line #e2dfd8, ink #1f1d1a,
+# ink-2 #5b574f, accent #1d4ed8 (citations and links only), verified #1a7f4b.
 
 [client]
 toolbarMode = "minimal"  # hide the developer menu and Deploy button for visitors
@@ -7,31 +9,20 @@ toolbarMode = "minimal"  # hide the developer menu and Deploy button for visitor
 gatherUsageStats = false
 
 [theme]
-font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-baseRadius = "medium"
-buttonRadius = "medium"
+base = "light"
+primaryColor = "#1f1d1a"
+backgroundColor = "#f7f6f3"
+secondaryBackgroundColor = "#efede8"
+textColor = "#1f1d1a"
+linkColor = "#1d4ed8"
+borderColor = "#e2dfd8"
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+headingFont = "Newsreader:https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap"
+baseRadius = "8px"
+buttonRadius = "8px"
 showWidgetBorder = true
 showSidebarBorder = true
 
-[theme.light]
-primaryColor = "#4f46e5"
-backgroundColor = "#f7f8fc"
-secondaryBackgroundColor = "#eef0f7"
-textColor = "#161a26"
-borderColor = "#e3e6ef"
-linkColor = "#4f46e5"
-
-[theme.light.sidebar]
-backgroundColor = "#ffffff"
-
-[theme.dark]
-primaryColor = "#8b85ff"
-backgroundColor = "#0e1118"
-secondaryBackgroundColor = "#1a1f2b"
-textColor = "#e8eaf2"
-borderColor = "#2a3040"
-linkColor = "#a29dff"
-
-[theme.dark.sidebar]
-backgroundColor = "#131722"
+[theme.sidebar]
+backgroundColor = "#efede8"
+secondaryBackgroundColor = "#f7f6f3"
