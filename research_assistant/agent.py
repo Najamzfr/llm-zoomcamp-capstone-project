@@ -9,6 +9,7 @@ import tiktoken
 from .paper_tools import MAX_FULL_TEXT_TOKENS, MAX_PAPERS, PaperTools
 from .config import settings
 from .paths import TRACE_DIR
+from .tracing import add_run_metadata, current_run_id, span, traceable, wrap_client
 from .rag import (
     MODEL,
     ResearchAssistant,
@@ -71,8 +72,16 @@ class AdaptiveResearchAgent:
         self.encoding = tiktoken.get_encoding("o200k_base")
         from openai import OpenAI
 
-        self.client = OpenAI()
+        self.client = wrap_client(OpenAI())
 
+    @traceable(
+        name="research_agent",
+        run_type="chain",
+        process_outputs=lambda outputs: {
+            key: outputs.get(key)
+            for key in ("answer", "answer_stage", "trajectory", "usage")
+        },
+    )
     def run(self, question):
         self.last_full_text_context = ""
         papers = self.hybrid.search(question, k=settings.result_count)
@@ -93,6 +102,7 @@ class AdaptiveResearchAgent:
         route, usage = self._json_call(
             ROUTER_PROMPT,
             f"Question:\n{question}\n\nRetrieved abstracts:\n{abstract_context}",
+            step="route_abstracts_or_full_text",
         )
         self._record_usage(usages, costs, "query_and_evidence_router", usage)
         trajectory.append({"name": "evaluate_abstract_sufficiency", "result": route})
@@ -111,6 +121,7 @@ class AdaptiveResearchAgent:
             check, usage = self._json_call(
                 ANSWER_CHECK_PROMPT,
                 f"Question:\n{question}\n\nAbstracts:\n{abstract_context}\n\nAnswer:\n{answer}",
+                step="check_abstract_answer",
             )
             self._record_usage(usages, costs, "abstract_answer_check", usage)
             trajectory.append({"name": "evaluate_answer", "result": check})
@@ -137,7 +148,16 @@ class AdaptiveResearchAgent:
             "usage_by_stage": costs,
             "usage": total_usage,
             "full_text_evidence": self.last_full_text_context,
+            "trace_run_id": current_run_id(),
         }
+        add_run_metadata(
+            {
+                "answer_stage": stage,
+                "input_tokens": total_usage.get("input_tokens"),
+                "output_tokens": total_usage.get("output_tokens"),
+                "estimated_cost_usd": total_usage.get("estimated_cost_usd"),
+            }
+        )
         self._save_trace(result)
         return result
 
@@ -148,7 +168,8 @@ class AdaptiveResearchAgent:
             trace_path=TRACE_DIR / "traces.jsonl",
         )
         prompt = assistant.build_prompt(question, papers)
-        answer = assistant.llm(prompt)
+        with span("answer_from_abstracts"):
+            answer = assistant.llm(prompt)
         return answer, assistant.last_usage
 
     def _full_text_answer(
@@ -217,15 +238,17 @@ class AdaptiveResearchAgent:
             }
         )
 
-        answer, usage = self._text_call(
-            FULL_TEXT_PROMPT,
-            f"Question:\n{question}\n\nFull-text evidence:\n{context}",
-            max_output_tokens=settings.max_full_text_answer_tokens,
-        )
+        with span("answer_from_full_text"):
+            answer, usage = self._text_call(
+                FULL_TEXT_PROMPT,
+                f"Question:\n{question}\n\nFull-text evidence:\n{context}",
+                max_output_tokens=settings.max_full_text_answer_tokens,
+            )
         self._record_usage(usages, costs, "full_text_answer", usage)
         final_check, usage = self._json_call(
             FINAL_CHECK_PROMPT,
             f"Question:\n{question}\n\nEvidence:\n{context}\n\nAnswer:\n{answer}",
+            step="check_full_text_answer",
         )
         self._record_usage(usages, costs, "final_answer_check", usage)
         trajectory.append({"name": "evaluate_final_answer", "result": final_check})
@@ -233,18 +256,19 @@ class AdaptiveResearchAgent:
             answer += "\n\nThe available full-text excerpts may not completely resolve every requested detail."
         return answer, "full_text"
 
-    def _json_call(self, instructions, prompt):
+    def _json_call(self, instructions, prompt, step="json_decision"):
         usages = []
         last_error = None
-        for _ in range(3):
-            text, usage = self._text_call(
-                instructions, prompt, max_output_tokens=settings.max_router_tokens
-            )
-            usages.append(usage)
-            try:
-                return self._parse_json(text), merge_usages(usages)
-            except (json.JSONDecodeError, TypeError) as error:
-                last_error = error
+        with span(step):
+            for _ in range(3):
+                text, usage = self._text_call(
+                    instructions, prompt, max_output_tokens=settings.max_router_tokens
+                )
+                usages.append(usage)
+                try:
+                    return self._parse_json(text), merge_usages(usages)
+                except (json.JSONDecodeError, TypeError) as error:
+                    last_error = error
         raise ValueError(
             "Model did not return valid JSON after three attempts."
         ) from last_error

@@ -1,16 +1,24 @@
 import time
+import uuid
+from collections import OrderedDict, deque
 from contextlib import asynccontextmanager
+from pathlib import Path
 from threading import Lock
+from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import Response
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 from prometheus_client import generate_latest
 
 from research_assistant.config import settings
 from research_assistant import metrics
+from research_assistant.tracing import send_feedback
 
 MAX_QUESTION_LENGTH = settings.max_question_length
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+METRIC_PATHS = {"/ask", "/feedback", "/health"}
 _agent = None
 _agent_lock = Lock()
 
@@ -27,6 +35,73 @@ class AskRequest(BaseModel):
         if len(value) > MAX_QUESTION_LENGTH:
             raise ValueError("question is too long")
         return value
+
+
+class AskLimiter:
+    """Global in-memory cap on /ask to protect the OpenAI budget."""
+
+    def __init__(self, per_minute, per_day):
+        self.per_minute = per_minute
+        self.per_day = per_day
+        self._recent = deque()
+        self._day = None
+        self._day_count = 0
+        self._lock = Lock()
+
+    def allow(self, now=None):
+        now = time.time() if now is None else now
+        day = int(now // 86400)
+        with self._lock:
+            if day != self._day:
+                self._day, self._day_count = day, 0
+            while self._recent and now - self._recent[0] >= 60:
+                self._recent.popleft()
+            if self.per_day > 0 and self._day_count >= self.per_day:
+                return False
+            if self.per_minute > 0 and len(self._recent) >= self.per_minute:
+                return False
+            self._recent.append(now)
+            self._day_count += 1
+            return True
+
+
+_ask_limiter = AskLimiter(settings.ask_rate_per_minute, settings.ask_daily_limit)
+
+
+class FeedbackRequest(BaseModel):
+    request_id: str = Field(min_length=1, max_length=64)
+    rating: Literal["up", "down"]
+
+
+class FeedbackStore:
+    """Remembers recent answer ids so each answer can be rated once."""
+
+    def __init__(self, max_size=1000):
+        self.max_size = max_size
+        self._items = OrderedDict()
+        self._lock = Lock()
+
+    def add(self, run_id=None):
+        request_id = uuid.uuid4().hex
+        with self._lock:
+            self._items[request_id] = {"rated": False, "run_id": run_id}
+            while len(self._items) > self.max_size:
+                self._items.popitem(last=False)
+        return request_id
+
+    def rate(self, request_id):
+        """Return ('ok' | 'unknown' | 'rated', LangSmith run id or None)."""
+        with self._lock:
+            item = self._items.get(request_id)
+            if item is None:
+                return "unknown", None
+            if item["rated"]:
+                return "rated", None
+            item["rated"] = True
+            return "ok", item["run_id"]
+
+
+_feedback_store = FeedbackStore()
 
 
 def _get_agent():
@@ -94,9 +169,10 @@ def _paper_response(paper):
     }
 
 
-def _response(result, question):
+def _response(result, question, request_id=None):
     papers = result.get("papers", [])
     return {
+        "request_id": request_id,
         "question": question,
         "answer": result.get("answer", ""),
         "answer_stage": result.get("answer_stage", "unknown"),
@@ -115,9 +191,12 @@ async def lifespan(_app):
 app = FastAPI(title="Research Paper RAG API", version="1.0.0", lifespan=lifespan)
 
 
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
 @app.middleware("http")
 async def request_metrics(request: Request, call_next):
-    if request.url.path == "/metrics":
+    if request.url.path not in METRIC_PATHS:
         return await call_next(request)
     started = time.perf_counter()
     metrics.ACTIVE_REQUESTS.inc()
@@ -133,6 +212,11 @@ async def request_metrics(request: Request, call_next):
         )
 
 
+@app.get("/", include_in_schema=False)
+async def index():
+    return FileResponse(STATIC_DIR / "index.html")
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -140,9 +224,15 @@ async def health():
 
 @app.post("/ask")
 def ask(payload: AskRequest):
+    if not _ask_limiter.allow():
+        raise HTTPException(
+            status_code=429,
+            detail="Too many questions right now. Please try again later.",
+        )
     try:
         result = _get_agent().run(payload.question)
-        response = _response(result, payload.question)
+        request_id = _feedback_store.add(result.get("trace_run_id"))
+        response = _response(result, payload.question, request_id)
         metrics.observe_result(response)
         return response
     except (ValueError, RuntimeError, OSError) as error:
@@ -151,9 +241,22 @@ def ask(payload: AskRequest):
         raise HTTPException(status_code=500, detail="The research assistant failed to answer.") from error
 
 
+@app.post("/feedback", status_code=204)
+async def feedback(payload: FeedbackRequest, background_tasks: BackgroundTasks):
+    outcome, run_id = _feedback_store.rate(payload.request_id)
+    if outcome == "unknown":
+        raise HTTPException(status_code=404, detail="Unknown or expired answer.")
+    if outcome == "rated":
+        raise HTTPException(status_code=409, detail="This answer was already rated.")
+    metrics.observe_feedback(payload.rating)
+    if run_id:
+        background_tasks.add_task(send_feedback, run_id, payload.rating)
+    return Response(status_code=204)
+
+
 @app.get("/metrics")
 async def prometheus_metrics():
     return Response(generate_latest(), media_type=metrics.CONTENT_TYPE_LATEST)
 
 
-__all__ = ["AskRequest", "app"]
+__all__ = ["AskRequest", "FeedbackRequest", "app"]

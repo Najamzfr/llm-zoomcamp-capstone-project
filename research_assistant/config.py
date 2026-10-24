@@ -42,7 +42,13 @@ class Settings:
     rrf_config_path: Path = _path("RAG_RRF_CONFIG_PATH", "config/rrf_config.json")
     trace_dir: Path = _path("RAG_TRACE_DIR", "artifacts/traces")
     paper_cache_dir: Path = _path("RAG_PAPER_CACHE_DIR", "artifacts/paper_cache")
-    search_backend: str = os.getenv("SEARCH_BACKEND", "sqlite_faiss")
+    model_cache_dir: Path = _path("RAG_MODEL_CACHE_DIR", "artifacts/models")
+    search_backend: str = os.getenv("SEARCH_BACKEND", "sqlite_qdrant")
+    qdrant_url: str = os.getenv("QDRANT_URL", "")
+    qdrant_api_key: str = os.getenv("QDRANT_API_KEY", "")
+    qdrant_collection: str = os.getenv("QDRANT_COLLECTION", "arxiv_papers")
+    ask_rate_per_minute: int = _int("RAG_ASK_RATE_PER_MINUTE", 10)
+    ask_daily_limit: int = _int("RAG_ASK_DAILY_LIMIT", 300)
     search_method: str = os.getenv("RAG_SEARCH_METHOD", "hybrid")
     result_count: int = _int("RAG_RESULT_COUNT", 5)
     hnsw_ef_search: int = _int("RAG_HNSW_EF_SEARCH", 50)
@@ -70,6 +76,8 @@ class Settings:
     chunk_overlap: int = _int("RAG_CHUNK_OVERLAP", 80)
     max_chunks: int = _int("RAG_MAX_CHUNKS", 8)
     max_chunks_per_paper: int = _int("RAG_MAX_CHUNKS_PER_PAPER", 4)
+    # PDF chunks are embedded in small batches: batch 64 peaks near 840 MB RAM, batch 4 near 375 MB.
+    chunk_embed_batch_size: int = _int("RAG_CHUNK_EMBED_BATCH_SIZE", 4)
     max_full_text_tokens: int = _int("RAG_MAX_FULL_TEXT_TOKENS", 5000)
 
 

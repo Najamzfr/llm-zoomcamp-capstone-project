@@ -1,21 +1,21 @@
 [project]
 name = "research-paper-rag"
 version = "0.1.0"
-description = "Local SQLite and FAISS research-paper RAG assistant"
+description = "Research-paper RAG assistant: SQLite FTS5 + Qdrant hybrid search, FastAPI web UI"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "faiss-cpu==1.14.3",
   "fastapi>=0.115.0",
+  "fastembed>=0.7.0",
   "httpx[socks]>=0.27.0",
+  "langsmith>=0.4",
   "numpy>=2.0.0",
   "openai>=2.37.0",
-  "pandas>=2.3.0",
   "prometheus-client>=0.20.0",
   "pymupdf==1.28.0",
   "python-dotenv>=1.2.2",
+  "qdrant-client>=1.12.0",
   "requests>=2.32.0",
-  "sentence-transformers>=5.5.0",
-  "streamlit>=1.40.0",
   "tiktoken==0.13.0",
   "uvicorn[standard]>=0.30.0",
 ]

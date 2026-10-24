@@ -8,9 +8,9 @@ from pathlib import Path
 
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
-
 from .config import settings
+from .embeddings import get_embedder
+from .tracing import traceable, wrap_client
 from .paths import CONFIG_PATH, DATABASE_PATH, TRACE_DIR, VECTOR_INDEX_PATH
 from .paths import VECTOR_METADATA_PATH
 
@@ -34,6 +34,17 @@ SYSTEM_PROMPT = (
     "or paraphrase each abstract mechanically. If the context is insufficient, say so clearly "
     "instead of inventing information."
 )
+
+
+def _ranked_summary(outputs):
+    """Show ranked ids, titles and scores in traces instead of full abstracts."""
+    items = outputs.get("output", outputs) if isinstance(outputs, dict) else outputs
+    return {
+        "results": [
+            {key: item.get(key) for key in ("rank", "paper_id", "title", "score") if key in item}
+            for item in items or []
+        ]
+    }
 
 
 class Trace:
@@ -174,7 +185,7 @@ class ResearchAssistant:
             self.last_usage = empty_usage(self.model)
             return answer
 
-        response = OpenAI().responses.create(
+        response = wrap_client(OpenAI()).responses.create(
             model=self.model,
             input=[
                 {"role": "developer", "content": self.system_prompt},
@@ -205,18 +216,13 @@ class ExactVectorSearch:
         index = np.load(metadata_path, allow_pickle=False)
         self.embeddings = index["embeddings"]
         self.paper_ids = index["paper_ids"]
-        self.model = SentenceTransformer(str(index["model"].item()))
+        self.model = get_embedder(str(index["model"].item()))
 
     def search(self, query, k=5):
         if not query.strip() or not len(self.paper_ids):
             return []
 
-        encode = getattr(self.model, "encode_query", self.model.encode)
-        query_vector = encode(
-            query,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
-        ).astype("float32")
+        query_vector = self.model.embed_query(query)
 
         # Both document and query vectors are normalized, so their dot product
         # is cosine similarity.
@@ -251,19 +257,15 @@ class VectorSearch:
                 )
         metadata = np.load(metadata_path, allow_pickle=False)
         self.paper_ids = metadata["paper_ids"]
-        self.model = SentenceTransformer(str(metadata["model"].item()))
+        self.model = get_embedder(str(metadata["model"].item()))
         self.index = faiss.read_index(str(path))
         self.index.hnsw.efSearch = max(ef_search, 5)
 
+    @traceable(name="vector_search_faiss", run_type="retriever", process_outputs=_ranked_summary)
     def search(self, query, k=5):
         if not query.strip() or not len(self.paper_ids):
             return []
-        encode = getattr(self.model, "encode_query", self.model.encode)
-        vector = encode(
-            query,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
-        ).astype("float32")
+        vector = self.model.embed_query(query)
         k = min(k, len(self.paper_ids))
         distances, labels = self.index.search(vector.reshape(1, -1), k)
         return [
@@ -278,6 +280,50 @@ class VectorSearch:
                 zip(labels[0], distances[0]), start=1
             )
             if label >= 0
+        ]
+
+
+class QdrantVectorSearch:
+    """Cosine search against a Qdrant collection built by ingest_qdrant.py."""
+
+    def __init__(
+        self,
+        client=None,
+        collection=settings.qdrant_collection,
+        model=None,
+    ):
+        if client is None:
+            if not settings.qdrant_url:
+                raise ValueError("QDRANT_URL must be set when SEARCH_BACKEND=sqlite_qdrant.")
+            from qdrant_client import QdrantClient
+
+            client = QdrantClient(
+                url=settings.qdrant_url,
+                api_key=settings.qdrant_api_key or None,
+                timeout=30,
+            )
+        self.client = client
+        self.collection = collection
+        self.model = model or get_embedder(settings.embedding_model)
+
+    @traceable(name="vector_search_qdrant", run_type="retriever", process_outputs=_ranked_summary)
+    def search(self, query, k=5):
+        if not query.strip():
+            return []
+        vector = self.model.embed_query(query)
+        response = self.client.query_points(
+            collection_name=self.collection,
+            query=vector.tolist(),
+            limit=k,
+            with_payload=["paper_id"],
+        )
+        return [
+            {
+                "paper_id": str(point.payload["paper_id"]),
+                "score": float(point.score),
+                "rank": rank,
+            }
+            for rank, point in enumerate(response.points, start=1)
         ]
 
 
@@ -304,6 +350,7 @@ class HybridSearch(SearchBackend):
         self.text_weight = text_weight
         self.vector_weight = vector_weight
 
+    @traceable(name="hybrid_search_rrf", run_type="retriever", process_outputs=_ranked_summary)
     def search(self, query, k=5):
         if not query.strip():
             return []
@@ -407,9 +454,15 @@ def build_hybrid_search(
 def build_search_backend(backend=settings.search_backend, **kwargs):
     if backend == "sqlite_faiss":
         return build_hybrid_search(**kwargs)
+    if backend == "sqlite_qdrant":
+        if kwargs.get("vector_search") is None:
+            kwargs["vector_search"] = QdrantVectorSearch()
+        return build_hybrid_search(**kwargs)
     if backend == "sqlite_fts":
         return SQLiteFTSBackend(kwargs.get("db_path", DATABASE_PATH))
-    raise ValueError("SEARCH_BACKEND must be 'sqlite_faiss' or 'sqlite_fts'.")
+    raise ValueError(
+        "SEARCH_BACKEND must be 'sqlite_faiss', 'sqlite_qdrant' or 'sqlite_fts'."
+    )
 
 
 def load_papers(paper_ids, db_path=DATABASE_PATH):
@@ -520,6 +573,7 @@ def calculate_usage(response, model):
 
 
 # Keep the retrieval helper used by the evaluation script.
+@traceable(name="keyword_search_fts5", run_type="retriever", process_outputs=_ranked_summary)
 def retrieve(query, k=5, db_path=DATABASE_PATH, mode="OR", latest=False):
     return ResearchAssistant(db_path=db_path, k=k, search_method="text").search(
         query, latest=latest, mode=mode

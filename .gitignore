@@ -19,3 +19,6 @@ __pycache__/
 
 # Local planning artifacts
 /plan/
+
+# Streamlit secrets (local)
+.streamlit/secrets.toml

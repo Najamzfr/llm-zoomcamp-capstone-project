@@ -6,8 +6,8 @@ import faiss
 import numpy as np
 from research_assistant.config import settings
 from research_assistant.paths import SOURCE_DATA_PATH
+from research_assistant.embeddings import Embedder
 from scripts.ingest import load_rows
-from sentence_transformers import SentenceTransformer
 
 VECTOR_MODEL = settings.embedding_model
 EXACT_INDEX_PATH = settings.vector_metadata_path
@@ -42,17 +42,10 @@ def ingest_vectors(data_path=SOURCE_DATA_PATH):
     print(f"Loaded {len(rows):,} papers.", flush=True)
 
     print(f"\nStage 2/4: Loading {VECTOR_MODEL}...", flush=True)
-    model = SentenceTransformer(VECTOR_MODEL)
-    encode = getattr(model, "encode_document", model.encode)
+    model = Embedder(VECTOR_MODEL)
 
     print(f"\nStage 3/4: Embedding {len(documents):,} papers...", flush=True)
-    embeddings = encode(
-        documents,
-        batch_size=64,
-        show_progress_bar=True,
-        normalize_embeddings=True,
-        convert_to_numpy=True,
-    ).astype("float32")
+    embeddings = model.embed_documents(documents, batch_size=64)
 
     print("\nStage 4/4: Building exact and HNSW indexes...", flush=True)
     paper_ids = np.asarray([row["paper_id"] for row in rows])

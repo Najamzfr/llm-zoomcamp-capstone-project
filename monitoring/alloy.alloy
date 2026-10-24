@@ -1,0 +1,19 @@
+// Grafana Alloy: scrape the local FastAPI /metrics endpoint and push to Grafana Cloud.
+// Run: alloy-windows-amd64.exe run monitoring\alloy.alloy  (see docs/monitoring.md)
+
+prometheus.scrape "rag_api" {
+  targets         = [{"__address__" = "127.0.0.1:8000", "job" = "research-rag-api"}]
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "15s"
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+}

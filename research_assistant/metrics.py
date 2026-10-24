@@ -53,6 +53,13 @@ FULL_TEXT_ROUTING = _collector(
     "Answers routed to abstract or full-text retrieval.",
     ("decision",),
 )
+FEEDBACK = _collector(
+    Counter, "rag_feedback", "User feedback on answers.", ("rating",)
+)
+
+
+def observe_feedback(rating):
+    FEEDBACK.labels(rating).inc()
 
 
 def observe_request(endpoint, status_code, duration_seconds):
@@ -85,6 +92,7 @@ def observe_result(result):
 __all__ = [
     "ACTIVE_REQUESTS",
     "CONTENT_TYPE_LATEST",
+    "observe_feedback",
     "observe_request",
     "observe_result",
 ]

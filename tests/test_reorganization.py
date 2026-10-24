@@ -1,3 +1,7 @@
+import os
+
+os.environ["LANGSMITH_TRACING"] = "false"  # never send test runs to LangSmith
+
 import csv
 import sqlite3
 import tempfile

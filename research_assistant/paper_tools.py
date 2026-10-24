@@ -10,10 +10,24 @@ import fitz
 import numpy as np
 import requests
 import tiktoken
-from sentence_transformers import SentenceTransformer
-
 from .config import settings
+from .embeddings import get_embedder
+from .tracing import traceable
 from .paths import PAPER_CACHE_DIR
+
+def _summarize_retrieval(outputs):
+    """Trace chunk ids, pages and scores rather than the full PDF text."""
+    if isinstance(outputs, dict):
+        outputs = outputs.get("output", outputs)
+    chunks, _context, downloaded_ids = outputs
+    return {
+        "chunks": [
+            {key: chunk.get(key) for key in ("chunk_id", "page", "score")}
+            for chunk in chunks
+        ],
+        "downloaded_paper_ids": downloaded_ids,
+    }
+
 
 CACHE_DIR = PAPER_CACHE_DIR
 PDF_DIR = CACHE_DIR / "pdfs"
@@ -28,6 +42,7 @@ CHUNK_TOKENS = settings.chunk_tokens
 CHUNK_OVERLAP = settings.chunk_overlap
 MAX_CHUNKS = settings.max_chunks
 MAX_CHUNKS_PER_PAPER = settings.max_chunks_per_paper
+CHUNK_EMBED_BATCH_SIZE = settings.chunk_embed_batch_size
 MAX_FULL_TEXT_TOKENS = settings.max_full_text_tokens
 EMBEDDING_MODEL = settings.embedding_model
 USER_AGENT = "ResearchPaperRAG/1.0 (educational project)"
@@ -150,6 +165,15 @@ class PaperTools:
         )
         return chunks, downloaded
 
+    @traceable(
+        name="retrieve_full_text",
+        run_type="tool",
+        process_inputs=lambda inputs: {
+            "query": inputs.get("query"),
+            "paper_ids": [paper.get("paper_id") for paper in inputs.get("papers") or []],
+        },
+        process_outputs=_summarize_retrieval,
+    )
     def retrieve(self, query, papers):
         selected = list(papers)[:MAX_PAPERS]
         all_chunks = []
@@ -165,25 +189,15 @@ class PaperTools:
             return [], "", downloaded_ids
 
         if self.model is None:
-            self.model = SentenceTransformer(EMBEDDING_MODEL)
+            self.model = get_embedder(EMBEDDING_MODEL)
         texts = [chunk["text"] for chunk in all_chunks]
         cache_key = tuple(chunk["chunk_id"] for chunk in all_chunks)
         embeddings = self.embedding_cache.get(cache_key)
         if embeddings is None:
-            encode_documents = getattr(self.model, "encode_document", self.model.encode)
-            embeddings = encode_documents(
-                texts,
-                normalize_embeddings=True,
-                convert_to_numpy=True,
-            ).astype("float32")
+            embeddings = self.model.embed_documents(texts, batch_size=CHUNK_EMBED_BATCH_SIZE)
             self.embedding_cache[cache_key] = embeddings
 
-        encode_query = getattr(self.model, "encode_query", self.model.encode)
-        query_vector = encode_query(
-            query,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
-        ).astype("float32")
+        query_vector = self.model.embed_query(query)
         scores = embeddings @ query_vector
         order = np.argsort(scores)[::-1]
 

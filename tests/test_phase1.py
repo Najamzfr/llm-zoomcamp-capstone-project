@@ -1,3 +1,7 @@
+import os
+
+os.environ["LANGSMITH_TRACING"] = "false"  # never send test runs to LangSmith
+
 import csv
 import os
 import tempfile
@@ -6,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from research_assistant.config import PROJECT_ROOT, _path
-from research_assistant.rag import HybridSearch, SQLiteFTSBackend, build_hybrid_search, build_search_backend
+from research_assistant.rag import HybridSearch, QdrantVectorSearch, SQLiteFTSBackend, build_hybrid_search, build_search_backend
 from scripts.ingest import REQUIRED_COLUMNS, ingest
 
 
@@ -58,6 +62,36 @@ class PhaseOneTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "SEARCH_BACKEND"):
             build_search_backend("qdrant")
 
+    def test_qdrant_vector_search_maps_points_to_ranked_results(self):
+        import numpy as np
+
+        class Point:
+            def __init__(self, paper_id, score):
+                self.payload, self.score = {"paper_id": paper_id}, score
+
+        class Client:
+            def query_points(self, **kwargs):
+                self.kwargs = kwargs
+                return type("R", (), {"points": [Point("two", 0.9), Point("one", 0.5)]})()
+
+        class Model:
+            def embed_query(self, text):
+                return np.ones(3, dtype="float32") / np.sqrt(3)
+
+        client = Client()
+        search = QdrantVectorSearch(client=client, collection="c", model=Model())
+        results = search.search("vectors", k=2)
+        self.assertEqual([r["paper_id"] for r in results], ["two", "one"])
+        self.assertEqual([r["rank"] for r in results], [1, 2])
+        self.assertEqual(client.kwargs["collection_name"], "c")
+        self.assertEqual(client.kwargs["limit"], 2)
+
+    def test_qdrant_backend_requires_url(self):
+        with patch("research_assistant.rag.settings") as mocked:
+            mocked.qdrant_url = ""
+            with self.assertRaisesRegex(ValueError, "QDRANT_URL"):
+                QdrantVectorSearch(model=object())
+
     def test_relative_config_paths_are_rooted_and_absolute_paths_are_preserved(self):
         self.assertEqual(_path("UNSET_TEST_PATH", "data/test.db"), PROJECT_ROOT / "data/test.db")
         absolute = Path(tempfile.gettempdir()) / "absolute-test.db"
@@ -75,7 +109,9 @@ class PhaseOneTests(unittest.TestCase):
                 '{"candidate_k": 2, "rrf_constant": 9, "text_weight": 0.9, "vector_weight": 0.1}',
                 encoding="utf-8",
             )
-            with patch.dict(os.environ, {"RAG_RRF_CONSTANT": "7"}):
+            rrf_env = {key: value for key, value in os.environ.items() if not key.startswith("RAG_RRF_")}
+            rrf_env["RAG_RRF_CONSTANT"] = "7"
+            with patch.dict(os.environ, rrf_env, clear=True):
                 backend = build_hybrid_search(
                     db_path=db_path,
                     config_path=config_path,

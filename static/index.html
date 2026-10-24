@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paper Scout</title>
+  <meta name="description" content="Ask questions about recent AI/ML research papers from arXiv.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><path d='M10 9h9l4 4v10H10z' fill='white'/></svg>">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try {
+      const saved = localStorage.getItem("theme");
+      if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+    } catch (_) {}
+  </script>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 3h8l4 4v14H6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12h6M9 16h6M9 8h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </span>
+      <div>
+        <h1>Paper Scout</h1>
+        <p class="tagline">Answers grounded in 7,701 recent arXiv AI/ML papers</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="status" id="status" data-state="checking" role="status">
+        <span class="dot" aria-hidden="true"></span><span class="status-text">Checking API…</span>
+      </span>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card ask-card" aria-labelledby="ask-label">
+      <form id="ask-form" novalidate>
+        <label id="ask-label" for="question" class="ask-label">What do you want to know?</label>
+        <textarea id="question" name="question" rows="3" maxlength="2000"
+          placeholder="e.g. How are LLM agents evaluated in recent papers?" required></textarea>
+        <div class="ask-row">
+          <div class="examples" aria-label="Example questions">
+            <button type="button" class="chip">How is retrieval-augmented generation evaluated?</button>
+            <button type="button" class="chip">Recent methods for reducing LLM hallucinations</button>
+            <button type="button" class="chip">Compare approaches to efficient fine-tuning</button>
+          </div>
+          <div class="ask-submit">
+            <span class="counter" id="counter">0 / 2000</span>
+            <button class="primary-btn" id="ask-btn" type="submit">
+              <span class="btn-label">Ask</span>
+              <kbd aria-hidden="true">Ctrl ↵</kbd>
+            </button>
+          </div>
+        </div>
+      </form>
+      <div class="recent" id="recent" hidden>
+        <span class="recent-label">Recent</span>
+        <div class="recent-list" id="recent-list"></div>
+      </div>
+    </section>
+
+    <div class="banner" id="error" role="alert" hidden></div>
+
+    <section id="loading" class="card loading" hidden aria-live="polite">
+      <div class="loading-head"><span class="spinner" aria-hidden="true"></span><span id="loading-text">Searching papers…</span></div>
+      <p class="loading-hint" id="loading-hint" hidden>Detailed questions read full PDFs and can take up to a minute.</p>
+      <div class="skeleton w90"></div><div class="skeleton w75"></div><div class="skeleton w82"></div><div class="skeleton w60"></div>
+    </section>
+
+    <section id="result" hidden>
+      <article class="card answer-card">
+        <div class="answer-head">
+          <h2>Answer</h2>
+          <span class="badge" id="stage-badge"></span>
+        </div>
+        <div class="answer markdown" id="answer" aria-live="polite"></div>
+        <div class="feedback" id="feedback">
+          <span class="feedback-label">Was this helpful?</span>
+          <button type="button" class="fb-btn" data-rating="up" aria-label="Helpful">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 11v9H4v-9zM7 11l4-8a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.3 20H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" class="fb-btn" data-rating="down" aria-label="Not helpful">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M17 13V4h3v9zM17 13l-4 8a2 2 0 0 1-2-2v-4H5.5a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 6.7 4H17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </button>
+          <span class="feedback-msg" id="feedback-msg" role="status"></span>
+        </div>
+      </article>
+
+      <section class="papers-section" aria-labelledby="papers-title">
+        <h2 id="papers-title" class="section-title">Sources</h2>
+        <div class="papers" id="papers"></div>
+      </section>
+
+      <details class="card details">
+        <summary>Run details</summary>
+        <dl class="stats" id="stats"></dl>
+        <ol class="timeline" id="timeline"></ol>
+      </details>
+    </section>
+
+    <section id="empty" class="empty">
+      <p>Ask about methods, benchmarks, or trends. Answers cite their sources, and you can open every paper on arXiv.</p>
+    </section>
+  </main>
+
+  <footer class="footer">FastAPI · SQLite FTS5 + Qdrant hybrid search · GPT-4o-mini</footer>
+
+  <script src="/static/vendor/marked.min.js"></script>
+  <script src="/static/vendor/purify.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -9,17 +9,19 @@ ingest:
 ingest-vectors:
 	uv run python ingest_vector.py
 
+ingest-qdrant:
+	uv run python ingest_qdrant.py
+
 evaluate:
-	uv run python scripts/evaluate.py
+	uv run python -m scripts.evaluate
 
 baseline-rag:
-	uv run python scripts/baseline_rag.py
+	uv run python -m scripts.baseline_rag
 
 live-smoke:
-	uv run python scripts/live_smoke.py
+	uv run python -m scripts.live_smoke
 
 api:
 	uv run uvicorn api:app
 
-app:
-	uv run streamlit run app.py
+run: api
