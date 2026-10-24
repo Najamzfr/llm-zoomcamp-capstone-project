@@ -40,7 +40,7 @@ def _load_secrets_into_env():
 _load_secrets_into_env()
 
 from api import AskLimiter  # noqa: E402  (shared rate limiter)
-from app.features import export, followups, history  # noqa: E402
+from app.features import concept_map, export, followups, history, review, share, study  # noqa: E402
 from app.features.llm_extras import LLMExtrasError, Rewrite, llm_json  # noqa: E402
 from app.features.records import build_record, byline, new_id, sources_context, variant_record  # noqa: E402
 from app.storage import local  # noqa: E402
@@ -188,12 +188,39 @@ a.cite:hover { background: var(--accent); color: #fff !important; }
 [class*="st-key-filters"] [data-testid="stButtonGroup"] > div { flex-wrap: wrap; }
 [class*="st-key-filters"] p { font-size: 14px; }
 
+/* Feature panels */
+[class*="st-key-panel_"] { background: var(--surface); margin-top: 6px; }
+.panel-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
+.panel-h b { font-size: 15px; }
+.fc-card { border: 1px solid var(--line); border-radius: 10px; padding: 26px 22px; background: var(--paper); min-height: 150px;
+           display: grid; place-items: center; text-align: center; }
+.fc-front { font: 500 22px/1.35 'Newsreader', Georgia, serif; max-width: 46ch; margin: 8px auto 0; color: var(--ink); }
+.fc-back { font-size: 15.5px; line-height: 1.55; margin: 14px auto 0; max-width: 60ch; color: var(--ink); }
+.fc-diff { font-size: 12px; color: var(--ink2); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; }
+.fc-topic { font-size: 13px; color: var(--ink2); }
+.fc-count { color: var(--ink2); font-size: 14px; padding: 0 8px; display: inline-flex; align-items: center; height: 40px; }
+.verdict { border-radius: 8px; padding: 10px 14px; margin: 6px 0 10px; font-size: 15px; }
+.verdict.good { background: #e3f2ea; color: var(--verified); }
+.verdict.bad { background: #fbe9e7; color: var(--bad); }
+.verdict p { color: var(--ink); margin: 4px 0 0; }
+.rv-src { font-size: 13.5px; color: var(--ink2); margin-top: 14px; }
+.rv-src b { color: var(--accent); }
+.rv-src a { color: var(--accent) !important; }
+[class*="st-key-review_grades"] button { min-width: 92px; height: auto; padding: 6px 12px; }
+[class*="st-key-review_grades"] button p { line-height: 1.3; }
+[class*="st-key-shared_banner"] { background: var(--sunk); border-radius: 8px; padding: 8px 8px 8px 14px; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+[class*="st-key-nav_review"] button { justify-content: flex-start; }
+
 @media (max-width: 640px) {
   .q-title { font-size: 25px; }
   [class*="st-key-prose_"] p, [class*="st-key-prose_"] li { font-size: 17px; }
   .block-container { padding-top: 3.4rem; }
   /* Phone: secondary actions move into "More" (their copies there end in "_m"). */
-  [class*="st-key-actions_"] [class*="st-key-deeper_"]:not([class$="_m"]):not([class*="_m "]) { display: none !important; }
+  [class*="st-key-actions_"] [class*="st-key-deeper_"]:not([class*="__m"]),
+  [class*="st-key-actions_"] [class*="st-key-map_"]:not([class*="__m"]),
+  [class*="st-key-actions_"] [class*="st-key-share_"]:not([class*="__m"]) { display: none !important; }
+  .fc-front { font-size: 19px; }
   [class*="st-key-narrow_"] { display: flex; }
 }
 </style>
@@ -262,7 +289,12 @@ if (!doc.__paperScout) {
   }, true);
   doc.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeAll(); });
 }
-const scrollTarget = (component.data || {}).scroll || "";
+const data = component.data || {};
+if (data.copy && window.__psCopied !== data.run) {
+  window.__psCopied = data.run;
+  try { navigator.clipboard.writeText(data.copy).catch(() => {}); } catch (e) {}
+}
+const scrollTarget = data.scroll || "";
 // Repeat briefly: the chat-input layout re-pins the page to the bottom while a rerun settles.
 if (scrollTarget) [300, 900, 1600].forEach((delay) => setTimeout(() => {
   const el = doc.getElementById(scrollTarget); if (el) el.scrollIntoView({ block: 'start' });
@@ -331,6 +363,9 @@ def ask(question):
     if since:
         filters["since"] = since
     state["messages"].append({"id": new_id(), "question": question, "status": "queued", "filters": filters})
+    state["view"] = None
+    if "a" in st.query_params:
+        del st.query_params["a"]
 
 
 def open_record(record):
@@ -436,9 +471,30 @@ def pick_followup(message_id):
     state[key] = None
 
 
+# Feature panels under an answer: name -> button label. Only one is open per answer.
+PANELS = {"study": "Study this", "map": "Concept map", "share": "Share"}
+PHONE_OVERFLOW = ("map", "share")  # these move into "More" on phones
+
+
+def toggle_panel(message_id, name):
+    state["panel"][message_id] = None if state["panel"].get(message_id) == name else name
+
+
+def panel_button(mid, name, suffix=""):
+    active = state["panel"].get(mid) == name
+    st.button(PANELS[name], key=f"{name}_{mid}{suffix}", type="primary" if active else "secondary",
+              on_click=toggle_panel, args=(mid, name))
+
+
 def render_more(message, record, prefix):
     mid = message["id"]
     with st.popover("More", key=f"more_{mid}"):
+        with st.container(key=f"narrow_{mid}"):  # phone-only overflow of the action row
+            if record.get("kind") == "answer" and st.button("Go deeper", key=f"deeper_{mid}__m", width="stretch"):
+                make_variant(message, "deeper")
+                st.rerun()
+            for name in PHONE_OVERFLOW:
+                panel_button(mid, name, suffix="__m")
         st.html(f"<span class='ps-btn' role='button' tabindex='0' data-copy='raw-{prefix}'>Copy answer</span>"
                 f"<pre class='ps-raw' id='raw-{prefix}'>{html.escape(record['answer_md'])}</pre>")
         st.download_button("Download Markdown", export.answer_markdown(record), file_name=export.markdown_filename(record["question"]),
@@ -448,17 +504,24 @@ def render_more(message, record, prefix):
                            mime="application/x-bibtex", key=f"bib_{mid}", width="stretch")
         with st.expander("Show as text"):
             st.code(record["answer_md"], language="markdown", wrap_lines=True)
-        with st.container(key=f"narrow_{mid}", horizontal=True):  # phone-only overflow of the action row
-            if record.get("kind") == "answer" and st.button("Go deeper", key=f"deeper_{mid}_m"):
-                make_variant(message, "deeper")
-                st.rerun()
 
 
-def render_actions(message, record, prefix):
+def save_shared_study(message):
+    record, cards = message["record"], (message.get("study") or {}).get("cards", [])
+    added = review.add_cards([dict(card, topic=record["question"]) for card in cards], record)
+    st.toast(f"Added {added} cards to your review deck" if added else "These cards are already in your review deck")
+
+
+def render_actions(message, record, prefix, readonly=False):
     mid = message["id"]
     with st.container(horizontal=True, key=f"actions_{mid}"):
         st.html(f"<button class='ps-btn' type='button' data-open-sources='{prefix}'>Sources · {len(record['sources'])}</button>",
                 width="content")
+        if readonly:
+            panel_button(mid, "study")
+            if message.get("study"):
+                st.button("Save to my review deck", key=f"savedeck_{mid}", on_click=save_shared_study, args=(message,))
+            return
         if record.get("kind") == "answer":
             if st.button("Explain simply", key=f"simpler_{mid}"):
                 make_variant(message, "simpler")
@@ -466,13 +529,30 @@ def render_actions(message, record, prefix):
             if st.button("Go deeper", key=f"deeper_{mid}"):  # moves into "More" on phones
                 make_variant(message, "deeper")
                 st.rerun()
+        for name in PANELS:
+            panel_button(mid, name)
         render_more(message, record, prefix)
         st.feedback("thumbs", key=f"feedback_{mid}", on_change=send_rating, args=(mid,))
     if state["errors"].get(mid):
         st.error(state["errors"].pop(mid))
 
 
-def render_message(message):
+def render_panel(message, record, prefix):
+    mid = message["id"]
+    name = state["panel"].get(mid)
+    if not name:
+        return
+    with st.container(key=f"panel_{mid}", border=True):
+        if name == "study":
+            study.render_panel(record, mid, prefix, readonly_study=message.get("study"))
+        elif name == "map":
+            concept_map.render_panel(record, mid, ask)
+        elif name == "share":
+            share.render_panel(record, mid, study=state.get("study_sets", {}).get(mid))
+        st.button("Close", key=f"close_{mid}", type="tertiary", on_click=toggle_panel, args=(mid, name))
+
+
+def render_message(message, readonly=False):
     mid = message["id"]
     prefix = f"m{mid}"
     status = message["status"]
@@ -519,7 +599,8 @@ def render_message(message):
         questions = followups.ensure(record)
         if questions:
             st.pills("Ask next", questions, key=f"followups_{mid}", on_change=pick_followup, args=(mid,))
-    render_actions(message, record, prefix)
+    render_actions(message, record, prefix, readonly)
+    render_panel(message, record, prefix)
     st.html(drawer_html(prefix, sources))
 
 
@@ -530,13 +611,22 @@ with st.sidebar:
     if st.button("New question", type="primary" if not state["messages"] else "secondary", width="stretch"):
         state["messages"] = []
         state["panel"] = {}
+        state["view"] = None
+        st.query_params.clear()
         st.rerun()
+    if review.deck():
+        due = review.due_count()
+        if st.button(f"Review · {due} due" if due else "Review deck", key="nav_review", type="tertiary", width="stretch",
+                     icon=":material/school:"):
+            state["view"] = "review"
+            st.rerun()
     saved = history.items()
     if saved:
         st.html("<div class='ps-side-label'>Recent</div>")
         for item in reversed(saved[-12:]):
             if st.button(shorten(item["question"], 60), key=f"hist_{item['id']}", type="tertiary", width="stretch"):
                 open_record(item)
+                state["view"] = None
                 st.rerun()
         if state.get("confirm_clear"):
             st.caption(f"Delete all {len(saved)} saved questions from this browser?")
@@ -558,7 +648,44 @@ with st.sidebar:
             "Every claim links to its source. Each question is answered on its own.</div>")
 
 # ---------------------------------------------------------------- main
-if not state["messages"]:
+def leave_shared():
+    st.query_params.clear()
+    state["messages"] = []
+    state["panel"] = {}
+
+
+def render_shared(share_id):
+    """Read-only view of a shared answer (?a=<id>)."""
+    cache = state.setdefault("shared", {})
+    if share_id not in cache:
+        cache[share_id] = share.load(share_id)
+    payload = cache[share_id]
+    with st.container(key="shared_banner", horizontal=True):
+        st.html("<span class='ps-note'>Shared answer · read-only</span>", width="content")
+        st.button("Ask your own question", key="shared_ask", type="primary", on_click=leave_shared)
+    if payload is None:
+        st.markdown("# This shared answer isn't available.")
+        st.html("<p class='ps-lead'>The link may be mistyped, or the answer may have been removed. "
+                "You can still ask the question yourself.</p>")
+        return
+    message = state.setdefault("shared_messages", {}).get(share_id)
+    if message is None:
+        message = {"id": share_id, "question": payload["question"], "status": "done", "record": share.as_record(payload),
+                   "study": payload.get("study")}
+        state["shared_messages"][share_id] = message
+    render_message(message, readonly=True)
+
+
+shared_id = st.query_params.get("a")
+viewing = "shared" if shared_id else ("review" if state.get("view") == "review" else "answers")
+if viewing == "shared":
+    render_shared(shared_id)
+elif viewing == "review":
+    if st.button("← Back to answers", key="review_back", type="tertiary"):
+        state["view"] = None
+        st.rerun()
+    review.render_screen()
+elif not state["messages"]:
     st.markdown("# Ask the research a question.")
     st.html("<p class='ps-lead'>Answers are built from recent AI and machine-learning papers. "
             "Every claim links to the paper it came from.</p>")
@@ -577,12 +704,15 @@ if not state["messages"]:
                     ask(question)
                     st.rerun()
 
-for position, message in enumerate(state["messages"]):
-    if position:
-        st.html("<hr class='ps-sep'>")
-    render_message(message)
+if viewing == "answers":
+    for position, message in enumerate(state["messages"]):
+        if position:
+            st.html("<hr class='ps-sep'>")
+        render_message(message)
 
 with st.container(key="filters", horizontal=True):
+    if viewing != "answers":  # filters only matter for new questions on the answers page
+        st.html("<style>[class*='st-key-filters'] { display: none; }</style>")
     st.pills("Research area", corpus["areas"], format_func=lambda code: AREA_NAMES.get(code, code), selection_mode="multi",
              key="area_filter", label_visibility="collapsed", help="Only search these research areas (none selected = all)")
     st.segmented_control("Period", PERIODS, default=PERIODS[0], key="period_filter", label_visibility="collapsed",
@@ -596,7 +726,8 @@ if typed:
     ask(typed)
     st.rerun()
 
-page_script()(key="page_script", data={"scroll": state.pop("scroll_to", "") or "", "run": new_id()}, height=0)
+page_script()(key="page_script", data={"scroll": state.pop("scroll_to", "") or "", "copy": state.pop("copy_text", "") or "",
+                                       "run": new_id()}, height=0)
 
 if state.get("start_research"):
     message_id = state.pop("start_research")

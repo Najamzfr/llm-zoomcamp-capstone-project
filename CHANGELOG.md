@@ -1,5 +1,19 @@
 # Changelog
 
+## Phase 2 — core study features
+- Study this: 8–10 flashcards and a 5-question quiz per answer (one cached call); options shuffled;
+  each card and explanation cites its sources. Harder set (mechanism/comparison questions).
+- Wrong quiz answers become review cards automatically ("Added to your review deck").
+- Spaced review with FSRS (py-fsrs): Again/Hard/Good/Easy, next-due preview, daily cap
+  (`REVIEW_DAILY_CAP`, default 20), topic filter, streak, JSON backup/import; sidebar "Review · n due".
+- Anki `.apkg` (stable deck/model ids, Front/Back/Source, question tags) and CSV export of a study set
+  or the whole deck.
+- Concept map (Graphviz, dashed = unsupported concepts) with concept pills that ask follow-ups,
+  SVG download (when Graphviz is installed) and Mermaid code.
+- Share links (`?a=<id>`): sanitised immutable snapshot (optionally with the study set) stored in
+  `SHARE_BACKEND` (supabase | memory); read-only page with Study this, Save to my review deck and
+  Ask your own question; 20 shares per session, 10 KB answer cap, graceful "not available" page.
+
 ## Phase 1 — quick wins (Streamlit app)
 - Answers end with three suggested follow-up questions (same model call); clicking one asks it.
 - "Explain simply" and "Go deeper" rewrite an answer from the same sources, keeping its citations.

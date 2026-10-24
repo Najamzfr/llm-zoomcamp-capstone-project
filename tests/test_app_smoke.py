@@ -87,5 +87,81 @@ class ActionTests(unittest.TestCase):
         self.assertEqual(app.session_state["ps_local"]["ps_history_v1"], [])
 
 
+class PanelTests(unittest.TestCase):
+    def setUp(self):
+        from app.features import llm_extras
+
+        llm_extras._cached.clear()
+
+    def test_study_panel_quiz_mistake_goes_to_review(self):
+        from tests.test_extras_phase2 import STUDY_REPLY
+
+        app = start()
+        record_id = open_featured(app)
+        with mock.patch("app.features.llm_extras._complete", return_value=STUDY_REPLY) as call:
+            app.button(key=f"study_{record_id}").click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual([tab.label for tab in app.tabs], ["Flashcards", "Quiz"])
+            self.assertIn("1 / 8", visible_text(app))
+            app.button(key=f"study_{record_id}_flip").click().run()
+            self.assertIn("Idea 1 explained.", visible_text(app))
+            first = app.session_state["study_sets"][record_id]["quiz"][0]
+            radio = app.radio(key=f"study_{record_id}_standard_{record_id}-sq1")
+            radio.set_value((first["answer_index"] + 1) % 4).run()  # a wrong option
+            self.assertIn("Not quite", visible_text(app))
+            self.assertIn(f"{record_id}-sq1-review", app.session_state["ps_local"]["ps_deck_v1"])
+            app.button(key=f"study_{record_id}_addall").click().run()
+            self.assertEqual(len(app.session_state["ps_local"]["ps_deck_v1"]), 9)
+            app.button(key=f"close_{record_id}").click().run()
+        self.assertEqual(call.call_count, 1)  # the second render came from the cache
+        self.assertEqual(app.button(key="nav_review").label, "Review · 9 due")
+
+    def test_concept_map_panel(self):
+        from tests.test_extras_phase2 import MAP_REPLY
+
+        app = start()
+        record_id = open_featured(app)
+        with mock.patch("app.features.llm_extras._complete", return_value=MAP_REPLY):
+            app.button(key=f"map_{record_id}").click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(len(app.get("graphviz_chart")), 1)
+            self.assertIn("Adapters", app.pills(key=f"map_{record_id}_explore").options)
+            with mock.patch.dict(os.environ, {"OPENAI_API_KEY": ""}):
+                app.pills(key=f"map_{record_id}_explore").set_value("Adapters").run()
+        questions = [message["question"] for message in app.session_state["messages"]]
+        self.assertTrue(questions[-1].startswith("Explain Adapters in the context of:"))
+
+    def test_share_link_opens_read_only(self):
+        from app.features import share
+
+        share._memory_backend.clear()
+        app = start()
+        record_id = open_featured(app)
+        with mock.patch.dict(os.environ, {"SHARE_BACKEND": "memory", "APP_URL": "https://paprly.streamlit.app"}):
+            app.button(key=f"share_{record_id}").click().run()
+            app.button(key=f"share_{record_id}_create").click().run()
+            self.assertFalse(app.exception)
+            url = app.session_state[f"share_{record_id}_url"]
+            viewer = AppTest.from_file(APP, default_timeout=60)
+            viewer.query_params["a"] = url.rsplit("=", 1)[1]
+            viewer.run()
+        self.assertFalse(viewer.exception)
+        text = visible_text(viewer)
+        self.assertIn("Shared answer · read-only", text)
+        self.assertIn(FEATURED[0]["question"], text)
+        self.assertIn("Ask your own question", text)
+        self.assertNotIn("Explain simply", text)
+        self.assertIsNone(INTERNALS.search(text))
+
+    def test_missing_share_shows_graceful_404(self):
+        app = AppTest.from_file(APP, default_timeout=60)
+        app.query_params["a"] = "missing1"
+        app.run()
+        self.assertFalse(app.exception)
+        self.assertIn("This shared answer isn't available.", visible_text(app))
+        app.button(key="shared_ask").click().run()
+        self.assertIn("Ask the research a question.", visible_text(app))
+
+
 if __name__ == "__main__":
     unittest.main()

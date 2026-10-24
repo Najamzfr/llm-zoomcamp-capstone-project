@@ -37,7 +37,7 @@ export default function (component) {
   }
   if (window.__psStoreSession !== data.session) {
     window.__psStoreSession = data.session;
-    const snapshot = { available: !!store, values: {} };
+    const snapshot = { available: !!store, values: {}, tz: -new Date().getTimezoneOffset() };
     if (store) for (const key of data.keys) { try { snapshot.values[key] = store.getItem(key); } catch (e) {} }
     setStateValue('snapshot', snapshot);
   }
@@ -85,6 +85,11 @@ def available():
     return _state()["ps_local_available"]
 
 
+def tz_minutes():
+    """The browser's UTC offset in minutes (0 until the first load or outside a browser)."""
+    return int(st.session_state.get("ps_tz_minutes", 0))
+
+
 def pending():
     return bool(_state()["ps_local_pending"])
 
@@ -121,6 +126,7 @@ def sync():
     if snapshot and not state["ps_local_loaded"]:
         state["ps_local_loaded"] = True
         state["ps_local_available"] = bool(snapshot.get("available"))
+        state["ps_tz_minutes"] = int(snapshot.get("tz") or 0)
         for key, factory in DEFAULTS.items():
             raw = (snapshot.get("values") or {}).get(key)
             try:
