@@ -33,12 +33,12 @@ the repository's `uv.lock` because it sits next to the entry file.
 - Memory: search ~260 MB; full-text answers peak ~400 MB (PDF chunks are embedded 4 at a time).
 - Prometheus/Grafana monitoring is for the local FastAPI app; on the cloud build use LangSmith traces
   and the 👍/👎 feedback recorded there.
-- Run it locally: `uv run --with "streamlit>=1.50" streamlit run deploy/streamlit_app.py`.
-- Look and feel (research-tool redesign): left-aligned empty state with sample questions, live
-  research steps with counts, answers with a short-answer box, comparison tables for "compare/vs"
-  questions, clickable citation chips that highlight their source card, a sources rail (chip row on
-  phones), Copy / BibTeX export / Helpful actions, question history and corpus scope in the sidebar,
-  and category + date filters. Theme tokens and fonts live in `.streamlit/config.toml`; formatting
-  helpers in `research_assistant/presentation.py`. Requires Streamlit 1.50+.
+- Run it locally: `uv run streamlit run deploy/streamlit_app.py`.
+- Look and feel: answer-first layout with a short-answer box, comparison tables for "compare/vs"
+  questions, citation chips that open the sources side panel, follow-up suggestions and an action row
+  (see the features list in the main README and `PLAN.md`). The UI never shows corpus counts, index
+  dates, category codes, model names, cost or research steps. Theme tokens and fonts live in
+  `.streamlit/config.toml`; formatting helpers in `research_assistant/presentation.py`; feature code in
+  `app/features/`. Requires Streamlit 1.50+ (uses `st.components.v2`).
 - Citations: full-text excerpts are labelled with their paper's source number, so `[n]` always
   points at source card n.

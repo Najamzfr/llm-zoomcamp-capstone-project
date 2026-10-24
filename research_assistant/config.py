@@ -63,9 +63,9 @@ class Settings:
     api_base_url: str = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
     api_timeout_seconds: float = _float("API_TIMEOUT_SECONDS", 300.0)
     max_question_length: int = _int("RAG_MAX_QUESTION_LENGTH", 2000)
-    max_answer_tokens: int = _int("RAG_MAX_ANSWER_TOKENS", 400)
+    max_answer_tokens: int = _int("RAG_MAX_ANSWER_TOKENS", 480)  # incl. ~50 for follow-ups
     max_router_tokens: int = _int("RAG_MAX_ROUTER_TOKENS", 300)
-    max_full_text_answer_tokens: int = _int("RAG_MAX_FULL_TEXT_ANSWER_TOKENS", 700)
+    max_full_text_answer_tokens: int = _int("RAG_MAX_FULL_TEXT_ANSWER_TOKENS", 760)
     max_papers: int = _int("RAG_MAX_PAPERS", 3)
     max_pdf_bytes: int = _int("RAG_MAX_PDF_BYTES", 25 * 1024 * 1024)
     max_pdf_pages: int = _int("RAG_MAX_PDF_PAGES", 100)

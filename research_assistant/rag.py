@@ -32,7 +32,10 @@ ANSWER_FORMAT = (
     "Sources cells contain bracketed citations such as [1][2]. "
     "Then give short sections, each with an H4 heading (####). Do not open with a list of "
     "paper titles. Cite the source number in brackets, such as [1] or [2][3], right after "
-    "each claim, including in table cells."
+    "each claim, including in table cells. "
+    "Finish with a line \"Follow-ups:\" and then three short follow-up questions a reader might "
+    "ask next, one per line starting with \"- \". They must be specific to this answer and must "
+    "not mention papers, sources, a corpus or a dataset."
 )
 SYSTEM_PROMPT = (
     "You are an expert research-paper assistant. Understand the user's intent, including "

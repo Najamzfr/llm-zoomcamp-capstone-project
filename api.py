@@ -14,6 +14,7 @@ from prometheus_client import generate_latest
 
 from research_assistant.config import settings
 from research_assistant import metrics
+from research_assistant.presentation import split_followups
 from research_assistant.tracing import send_feedback
 
 MAX_QUESTION_LENGTH = settings.max_question_length
@@ -171,10 +172,12 @@ def _paper_response(paper):
 
 def _response(result, question, request_id=None):
     papers = result.get("papers", [])
+    answer, followups = split_followups(result.get("answer", ""))
     return {
         "request_id": request_id,
         "question": question,
-        "answer": result.get("answer", ""),
+        "answer": answer,
+        "followups": followups,
         "answer_stage": result.get("answer_stage", "unknown"),
         "paper_names": [paper.get("title", "") for paper in papers],
         "retrieved_papers": [_paper_response(paper) for paper in papers],

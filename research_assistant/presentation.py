@@ -1,4 +1,4 @@
-"""Pure formatting helpers for answer views (citation chips, short answer, excerpts, BibTeX)."""
+"""Pure formatting helpers for answer views (citation chips, short answer, excerpts, follow-ups)."""
 
 import html
 import re
@@ -86,34 +86,6 @@ def short_title(title, words=3):
     return " ".join(parts[:words]) + ("…" if len(parts) > words else "")
 
 
-def bibtex(papers):
-    """BibTeX @misc entries for arXiv papers (dicts with paper_id, title, authors, date…)."""
-    entries = []
-    for paper in papers:
-        arxiv_id = str(paper.get("paper_id") or "").strip()
-        if not arxiv_id:
-            continue
-        key = re.sub(r"[^A-Za-z0-9]", "", arxiv_id.split("v")[0]) or "paper"
-        year = str(paper.get("submitted_date") or paper.get("published") or "")[:4]
-        authors = " and ".join(a.strip() for a in str(paper.get("authors") or "").split(",") if a.strip())
-        fields = {
-            "title": "{" + _bib(paper.get("title")) + "}",
-            "author": _bib(authors),
-            "year": year,
-            "eprint": arxiv_id,
-            "archivePrefix": "arXiv",
-            "primaryClass": paper.get("category") or paper.get("primary_category") or "",
-            "url": paper.get("arxiv_url") or paper.get("url") or f"https://arxiv.org/abs/{arxiv_id}",
-        }
-        body = ",\n".join(f"  {name} = {{{value}}}" for name, value in fields.items() if value)
-        entries.append(f"@misc{{arxiv{key},\n{body}\n}}")
-    return "\n\n".join(entries) + ("\n" if entries else "")
-
-
-def _bib(value):
-    return str(value or "").replace("{", "").replace("}", "").strip()
-
-
 def period_start(period, corpus_end):
     """ISO start date for a period label relative to the newest paper; None for 'All'."""
     months = {"Last 3 months": 3, "Last month": 1, "Last 6 months": 6}.get(period)
@@ -130,3 +102,51 @@ def format_date(value):
     except ValueError:
         return str(value or "")[:10]
     return f"{parsed.day} {parsed.strftime('%b %Y')}"
+
+
+FOLLOWUPS = re.compile(r"^\s*(?:#+\s*)?\**\s*follow[- ]?ups?(?: questions)?\s*:?\s*\**\s*:?\s*$", re.IGNORECASE | re.MULTILINE)
+
+
+def split_followups(markdown, limit=3):
+    """Return (answer_without_block, [questions]) for an answer that ends with a 'Follow-ups:' list.
+
+    Text after the list (e.g. a limitation note appended by the agent) is kept in the answer.
+    """
+    text = markdown or ""
+    match = FOLLOWUPS.search(text)
+    if not match:
+        return text.strip(), []
+    lines = text[match.end():].lstrip("\n").split("\n")
+    questions, consumed = [], 0
+    for line in lines:
+        item = re.match(r"^\s*(?:[-*•]|\d+[.)])\s+(.+?)\s*$", line)
+        if item:
+            questions.append(re.sub(r"^(?:[-*•]\s*)+", "", item.group(1)).strip("* ").strip())
+            consumed += 1
+        elif not line.strip() and not questions:
+            consumed += 1
+        else:
+            break
+    tail = "\n".join(lines[consumed:]).strip()
+    head = text[:match.start()].rstrip()
+    answer = (head + ("\n\n" + tail if tail else "")).strip()
+    return answer, [question for question in questions if question][:limit]
+
+
+def slug(text, limit=60):
+    """Lower-case ASCII file-name slug: 'How is RAG evaluated?' -> 'how-is-rag-evaluated'."""
+    ascii_text = (text or "").encode("ascii", "ignore").decode()
+    value = re.sub(r"[^a-z0-9]+", "-", ascii_text.lower()).strip("-")
+    return value[:limit].rstrip("-") or "answer"
+
+
+def strip_for_speech(markdown):
+    """Plain text for read-aloud: no citations, tables, headings marks, emphasis or links."""
+    text = CITATION.sub("", markdown or "")
+    text = re.sub(r"^\s*\|.*\|\s*$", "", text, flags=re.MULTILINE)  # tables are unreadable aloud
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"^\s*#+\s*", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^\s*[-*]\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"[*_`>]", "", text)
+    text = re.sub(r"\s+([.,;:])", r"\1", text)
+    return re.sub(r"\n{2,}", "\n", text).strip()

@@ -1,0 +1,464 @@
+[
+ {
+  "id": "feat01",
+  "question": "How is retrieval-augmented generation evaluated?",
+  "answer_md": "Short answer: Retrieval-augmented generation (RAG) evaluation involves assessing multiple components, focusing primarily on the relevance of retrieved context. Evaluation strategies can be categorized as labeled or unlabeled, with the latter gaining popularity to address complexities in multi-hop queries, where multiple contexts are necessary for accurate responses [2].\n\n#### Evaluation Components\nRAG systems consist of three main components: indexing, retrieving, and generating. While the generator is widely studied, the retrieval and indexing components deserve more focus to evaluate how well they contribute to the overall system performance [2].\n\n#### Evaluation Strategies\nEvaluation may use labeled or unlabeled approaches. Labeled evaluations require predefined relevant contexts for each query, facilitating straightforward relevance assessments. However, challenges arise due to modifications in document segmentation which may affect the relevance of labeled segments [2]. Unlabeled evaluations assess relevance based on the input query and ground truth answers, presenting flexibility in cases where labeled datasets are not feasible [2].\n\n#### Importance of Context-Aware Evaluation\nThe effectiveness of evaluation methods can vary significantly with query complexity. Context-aware evaluation is indispensable, especially for multi-hop queries, as it captures how multiple retrieved contexts integrate to form a cohesive answer, thereby improving reliability and accuracy in RAG systems [2][5].",
+  "followups": [
+   "What specific metrics are used in labeled and unlabeled evaluations of RAG systems?",
+   "How do evaluation strategies differ for single-hop versus multi-hop queries in practice?",
+   "What implications do evaluation challenges have on the design of RAG systems?"
+  ],
+  "sources": [
+   {
+    "n": 1,
+    "title": "Beyond Relevance: Utility-Centric Retrieval in the LLM Era",
+    "authors": "Hengran Zhang; Minghao Tang; Keping Bi; Jiafeng Guo",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.08920v1",
+    "paper_id": "2604.08920v1",
+    "excerpt": "Information retrieval systems have traditionally optimized for topical relevance-the degree to which retrieved documents match a query. However…",
+    "evidence": "Information retrieval systems have traditionally optimized for topical relevance-the degree to which retrieved documents match a query. However, relevance only approximates a deeper goal: utility, namely, whether retrieved information helps accomplish a user's underlying task. The emergence of retrieval-augmented generation (RAG) fundamentally changes this paradigm. Retrieved documents are no longer consumed directly by users but instead serve as evidence for large language models (LLMs) that produce answers. As a result, retrieval effectiveness must be evaluated by its contribution to generation quality rather than by relevance-based ranking metrics alone. This tutorial argues that retrieval objectives are evolving from relevance-centric optimization toward LLM-centric utility. We present a unified framework covering LLM-agnostic versus LLM-specific utility, context-independent versus context-dependent utility, and the connection with LLM information needs and agentic RAG. By synthesizing recent advances, the tutorial provides conceptual foundations and practical guidance for designing retrieval systems aligned with the requirements of LLM-based information access."
+   },
+   {
+    "n": 2,
+    "title": "Evaluating Multi-Hop Reasoning in RAG Systems: A Comparison of LLM-Based Retriever Evaluation Strategies",
+    "authors": "Lorenz Brehme; Thomas Ströhle; Ruth Breu",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.18234v1",
+    "paper_id": "2604.18234v1",
+    "excerpt": "LLM to process the retrieved data together with the input query to generate the final response.",
+    "evidence": "2 Brehme et al. LLM to process the retrieved data together with the input query to generate the final response. Evaluating all three components is essential for assessing the performance of a RAG system and ensuring it produces accurate, well-grounded responses: While the generator component has been extensively studied—with approaches such as RAGAS [11] and Ares [23] proposing methodologies to as- sess the quality of RAG-generated responses—evaluation of the retrieval and indexing components has received comparatively less attention [6]. In partic- ular, assessment of indexing methods often relies on system-level performance metrics such as throughput and latency [14]. Our focus is on retriever evaluation, which assesses the relevance of the con- text retrieved by a RAG system. This evaluation is typically conducted using one of two main strategies: labeled [19, 25] and unlabeled [1, 24]. In labeled evalua- tions, the relevant context for each query is predefined within the dataset, and the retriever is assessed based on its ability to return these labeled documents [25]. However, labeled evaluation is not always practical. When the chunking strat- egy is modified, the segments labeled as relevant may no longer correspond to the actual segments retrieved by the RAG system due to changes in document segmentation [17]. Additionally, the structure of QA datasets poses challenges: each question-answer pair is typically derived from documents in the corpus and labeled…"
+   },
+   {
+    "n": 3,
+    "title": "Overview of the TREC 2025 Retrieval Augmented Generation (RAG) Track",
+    "authors": "Shivani Upadhyay; Nandan Thakur; Ronak Pradeep; Nick Craswell; Daniel Campos; Jimmy Lin",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2603.09891v1",
+    "paper_id": "2603.09891v1",
+    "excerpt": "The second edition of the TREC Retrieval Augmented Generation (RAG) Track advances research on systems that integrate retrieval and generation to…",
+    "evidence": "grilllab-gpt45-gen grilllab RAG 0.5662 0.3475 uema2lab_rag_fewdoc tus RAG 0.2849 0.2849 KG-AG-1 clip2025 RAG 0.2813 0.2754 sub_query_entities clip2025 RAG 0.1515 0.1515 ori_query_entities clip2025 RAG 0.1224 0.1211 uema2lab_base tus RAG 0.1171 0.1171 e5_monot5_searchR1 uogTr RAG 0.1074 0.1074 genSubQ_merge uogTr RAG 0.0902 0.0878 Table 12: Automatic support evaluation (weighted precision and recall) for RAG and AG tasks with GPT-OSS 120B as the assessor for 17 narratives. 19"
+   },
+   {
+    "n": 4,
+    "title": "Retrieval as Generation: A Unified Framework with Self-Triggered Information Planning",
+    "authors": "Bo Li; Mingda Wang; Gexiang Fang; Shikun Zhang; Wei Ye",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.11407v2",
+    "paper_id": "2604.11407v2",
+    "excerpt": "We revisit retrieval-augmented generation (RAG) by embedding retrieval control directly into generation. Instead of treating retrieval as an external…",
+    "evidence": "We revisit retrieval-augmented generation (RAG) by embedding retrieval control directly into generation. Instead of treating retrieval as an external intervention, we express retrieval decisions within token-level decoding, enabling end-to-end coordination without additional controllers or classifiers. Under the paradigm of Retrieval as Generation, we propose \\textbf{GRIP} (\\textbf{G}eneration-guided \\textbf{R}etrieval with \\textbf{I}nformation \\textbf{P}lanning), a unified framework in which the model regulates retrieval behavior through control-token emission. Central to GRIP is \\textit{Self-Triggered Information Planning}, which allows the model to decide when to retrieve, how to reformulate queries, and when to terminate, all within a single autoregressive trajectory. This design tightly couples retrieval and reasoning and supports dynamic multi-step inference with on-the-fly evidence integration. To supervise these behaviors, we construct a structured training set covering answerable, partially answerable, and multi-hop queries, each aligned with specific token patterns. Experiments on five QA benchmarks show that GRIP surpasses strong RAG baselines and is competitive with GPT-4o while using substantially fewer parameters."
+   },
+   {
+    "n": 5,
+    "title": "A Reproducibility Study of Metacognitive Retrieval-Augmented Generation",
+    "authors": "Gabriel Iturra-Bocaz; Petra Galuscakova",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.19899v1",
+    "paper_id": "2604.19899v1",
+    "excerpt": "RAG’s effectiveness depends strongly on key design choices, including the judgment threshold, retrieval strategy, reranking method, and underlying…",
+    "evidence": "RAG’s effectiveness depends strongly on key design choices, including the judgment threshold, retrieval strategy, reranking method, and underlying LLM. As future work, we aim to extend metacognitive RAG to ad- ditional knowledge-intensive tasks, such as biomedical question answering and mathematical reasoning, where balancing retrieval and reasoning is particularly critical. We also plan to compare metacognitive RAG frameworks with alternative approaches that learn retrieval and search behaviors via reinforcement learning, such as Search-R1 [13], as well as with other agent-based RAG systems. Moreover, we will broaden our evaluation beyond final answer accuracy by assessing the quality of retrieved evidence and the correctness and coherence of intermediate reasoning steps [5]. References [1] Akari Asai, Zeqiu Wu, Yizhong Wang, Avirup Sil, and Hannaneh Hajishirzi. 2024. Self-rag: Learning to retrieve, generate, and critique through self-reflection. (2024). [2] Hossein Bahak, Farzaneh Taheri, Zahra Zojaji, and Arefeh Kazemi. 2023. Evalu- ating chatgpt as a question answering system: A comprehensive analysis and comparison with existing models. arXiv preprint arXiv:2312.07592 (2023). [3] Jianlv Chen, Shitao Xiao, Peitian Zhang, Kun Luo, Defu Lian, and Zheng Liu. 2024. BGE M3-Embedding: Multi-Lingual, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation. arXiv:2402.03216 [cs.CL] [4] Gordon V Cormack, Charles LA Clarke, and Stefan Buettcher…"
+   }
+  ],
+  "created_at": "2026-10-24T22:40:28+00:00",
+  "kind": "answer",
+  "verified": true,
+  "teaser": "Retrieval-augmented generation (RAG) evaluation involves assessing multiple components…"
+ },
+ {
+  "id": "feat02",
+  "question": "Compare approaches to efficient fine-tuning of large language models",
+  "answer_md": "Short answer: Two notable approaches for efficient fine-tuning of large language models are TLoRA+ and selective parameter optimization. TLoRA+ employs low-rank adaptations to fine-tune models efficiently while preserving performance, while selective parameter optimization focuses on training only non-core parameters to mitigate catastrophic forgetting and keep general knowledge intact [2][3].\n\n#### Comparison Table\n\n| Approach                          | What it changes                                          | Best for                                | Sources |\n|-----------------------------------|---------------------------------------------------------|-----------------------------------------|---------|\n| TLoRA+                            | Introduces low-rank adaptations without extra latency   | Users needing high performance efficiency | [2]     |\n| Selective Parameter Optimization   | Fixes core parameters and updates only non-core ones   | Avoiding catastrophic forgetting          | [3]     |\n\n#### TLoRA+ Approach\nTLoRA+ stands out in Parameter-Efficient Fine-Tuning (PEFT) by implementing low-rank adaptations for large language models, which match the performance of full fine-tuning while minimizing inferential costs. This method allows for efficient model adaptation without incurring the additional computational costs associated with training a vast number of parameters [2].\n\n#### Selective Parameter Optimization Approach\nThis method innovatively evaluates the importance of model parameters and focuses on fine-tuning only those deemed less critical for general language understanding, which helps mitigate catastrophic forgetting. By locking core parameters during adaptation, it preserves the general knowledge acquired during pre-training [3].",
+  "followups": [
+   "What are the computational costs associated with each fine-tuning method?",
+   "How do these approaches perform on specific tasks compared to full fine-tuning?",
+   "Are there any hybrid methods that combine TLoRA+ and selective parameter optimization?"
+  ],
+  "sources": [
+   {
+    "n": 1,
+    "title": "JudgeMeNot: Personalizing Large Language Models to Emulate Judicial Reasoning in Hebrew",
+    "authors": "Itay Razumenko; Arnon Sturm; Nir Grinberg",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.18041v1",
+    "paper_id": "2604.18041v1",
+    "excerpt": "Despite significant advances in large language models, personalizing them for individual decision-makers remains an open problem. Here, we introduce…",
+    "evidence": "Despite significant advances in large language models, personalizing them for individual decision-makers remains an open problem. Here, we introduce a synthetic-organic supervision pipeline that transforms raw judicial decisions into instruction-tuning data, enabling parameter-efficient fine-tuning of personalized models for individual judges in low-resource settings. We compare our approach to state-of-the-art personalization techniques across three different tasks and settings. The results show that Causal Language Modeling followed by synthetically generated instruction-tuning significantly outperforms all other baselines, providing significant improvements across lexical, stylistic, and semantic similarity. Notably, our model-generated outputs are indistinguishable from the reasoning of human judges, highlighting the viability of efficient personalization, even in low-resource settings."
+   },
+   {
+    "n": 2,
+    "title": "TLoRA+: A Low-Rank Parameter-Efficient Fine-Tuning Method for Large Language Models",
+    "authors": "Yarui Cao; Kai Liu",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.13368v1",
+    "paper_id": "2604.13368v1",
+    "excerpt": "Among Parameter-Efficient Fine-Tuning (PEFT) methods, Low-Rank Adap- tation (LoRA) stands out by matching the performance of full fine-tuning while…",
+    "evidence": "Preprint. Under review. TLoRA+: A Low-Rank Parameter-Efficient Fine-Tuning Method for Large Language Models Yarui Cao Department of Computer Science Clemson University Clemson, SC 29634, USA yaruic@clemson.edu Kai Liu Department of Computer Science Clemson University Clemson, SC 29634, USA kail@clemson.edu Abstract Fine-tuning large language models (LLMs) aims to adapt pre-trained mod- els to specific tasks using relatively small and domain-specific datasets. Among Parameter-Efficient Fine-Tuning (PEFT) methods, Low-Rank Adap- tation (LoRA) stands out by matching the performance of full fine-tuning while avoiding additional inference latency. In this paper, we propose a novel PEFT method that incorporates the TLoRA+ optimizer into the weight matrices of pre-trained models. The proposed approach not only preserves the efficiency of low-rank adaptation but also further enhances performance without significantly increasing computational cost. We con- duct experiments on the GLUE benchmark across diverse model architec- tures. Numerical experiments consistently demonstrate the effectiveness and robustness of our proposed method. 1 Introduction Fine-tuning large language models (LLMs) (Hoffmann et al., 2022) aims to adapt a pre- trained model on a smaller, domain-specific dataset to perform specific tasks or improve its performance. This process refines the model’s weights to enhance task performance, inject desirable behaviors, and eliminate undesirable ones. However…"
+   },
+   {
+    "n": 3,
+    "title": "Efficient Task Adaptation in Large Language Models via Selective Parameter Optimization",
+    "authors": "Weijie Wan; Jiangjiang Zhao",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.17051v1",
+    "paper_id": "2604.17051v1",
+    "excerpt": "Kanan, “Mea- suring catastrophic forgetting in neural networks,” in Proceedings of the AAAI conference on artificial intelligence, vol.",
+    "evidence": "J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang, and W. Chen, “Lora: Low-rank adaptation of large language models,” arXiv preprint arXiv:2106.09685, 2021. [6] Z. Wang, J. Liang, R. He, Z. Wang, and T. Tan, “Lora-pro: Are low-rank adapters properly optimized?” arXiv preprint arXiv:2407.18242, 2024. [7] K. Lv, Y. Yang, T. Liu, Q. Gao, Q. Guo, and X. Qiu, “Full parameter fine-tuning for large language models with limited resources,” arXiv preprint arXiv:2306.09782, 2023. [8] H. Touvron, L. Martin, K. Stone, P. Albert, A. Almahairi, Y. Babaei, N. Bashlykov, S. Batra, P. Bhargava, S. Bhosale et al., “Llama 2: Open foundation and fine-tuned chat models,” arXiv preprint arXiv:2307.09288, 2023. [9] H. Touvron, T. Lavril, G. Izacard, X. Martinet, M.-A. Lachaux, T. Lacroix, B. Rozi`ere, N. Goyal, E. Hambro, F. Azhar et al., “Llama: Open and efficient foundation language models,” arXiv preprint arXiv:2302.13971, 2023. [10] Z. Li and D. Hoiem, “Learning without forgetting,” IEEE transactions on pattern analysis and machine intelligence, vol. 40, no. 12, pp. 2935– 2947, 2017. [11] R. Kemker, M. McClure, A. Abitino, T. Hayes, and C. Kanan, “Mea- suring catastrophic forgetting in neural networks,” in Proceedings of the AAAI conference on artificial intelligence, vol. 32, no. 1, 2018. [12] L. Gao, S. Biderman, S. Black, L. Golding, T. Hoppe, C. Foster, J. Phang, H. He, A. Thite, N. Nabeshima et al., “The pile: An 800gb dataset of diverse text for language modeling,” arXiv…"
+   },
+   {
+    "n": 4,
+    "title": "TLPO: Token-Level Policy Optimization for Mitigating Language Confusion in Large Language Models",
+    "authors": "Jinho Choo; JunSeung Lee; Jimyeong Kim; Yeeho Song; S. K. Hong; Yeong-Dae Kwon",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.26553v1",
+    "paper_id": "2604.26553v1",
+    "excerpt": "Large language models (LLMs) demonstrate strong multilingual capabilities, yet often fail to consistently generate responses in the intended…",
+    "evidence": "Large language models (LLMs) demonstrate strong multilingual capabilities, yet often fail to consistently generate responses in the intended language, exhibiting a phenomenon known as language confusion. Prior mitigation approaches based on sequence-level fine-tuning, such as DPO, ORPO, and GRPO, operate at the level of entire responses and can lead to unintended degradation of general model capabilities, motivating the need for more fine-grained alternatives. To address this, we introduce Token-Level Policy Optimization (TLPO), a fine-tuning framework designed to mitigate language confusion through localized, token-level updates. TLPO identifies error-prone positions, explores alternative candidate tokens, and updates the policy using a tailored objective to suppress error-inducing outputs at a granular level. This selective intervention enables effective mitigation of language confusion without compromising the model's general abilities. Experiments on multiple multilingual LLMs across diverse languages demonstrate that TLPO significantly outperforms baselines in improving language consistency while preserving downstream task accuracy."
+   },
+   {
+    "n": 5,
+    "title": "LLM attribution analysis across different fine-tuning strategies and model scales for automated code compliance",
+    "authors": "Jack Wei Lun Shi; Minghao Dang; Wawan Solihin; Justin K. W. Yeoh",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.15589v1",
+    "paper_id": "2604.15589v1",
+    "excerpt": "To enhance the performance of LLMs on specialized ACC tasks, few research focuses on fine-tuning for specific applications.",
+    "evidence": "2 ICCCBE, 23-26 March 2026, Taipei, Taiwan 133-2 references. Similarly, Kim et al. [4] demonstrated the value of multi-modality by utilizing LLMs to derive computer- processable rules from both textual rules and their accompanying graphical representations, achieving higher accuracy than text-only methods. To enhance the performance of LLMs on specialized ACC tasks, few research focuses on fine-tuning for specific applications. The primary challenge with this approach is the high computational cost of full fine-tuning (FFT), which requires significant computational resources. Consequently, PEFT methods have become a popular alternative, as they modify only a small subset of the model’s parameters, making the fine-tuning process more computationally efficient. For example, Shi et al. [3] utilized quantized low-rank adaptation (QLoRA) fine-tuning to adapt a 7 billion parameter model for converting textual building rules into Python scripts. The QLoRA technique was chosen to overcome the high computational costs associated with the long and complex rule-script pairs characteristic of ACC tasks. In a different context, Lee et al. [6] applied the LoRA technique to fine-tune a 12.8 billion parameter model for retrieving construction safety management knowledge. Their goal was to adapt the model to a specialized question-answer dataset derived from safety guidelines, demonstrating the efficiency of PEFT methods on limited computational resources. While these studies validate the…"
+   }
+  ],
+  "created_at": "2026-10-24T22:40:45+00:00",
+  "kind": "answer",
+  "verified": true,
+  "teaser": "Two notable approaches for efficient fine-tuning of large language models are TLoRA+ and…"
+ },
+ {
+  "id": "feat03",
+  "question": "What methods reduce hallucinations in large language models?",
+  "answer_md": "Short answer: Methods to reduce hallucinations in large language models include Prefill-Time Intervention (PTI), which enhances initial representations before error accumulation, and a dual-stage framework called MPD that disentangles hallucination components while maintaining overall generative capability. These strategies focus on correcting errors at their source and selectively updating relevant parameters to minimize performance degradation [1][3].\n\n#### Overview of Methods\n\n| Approach                       | What it changes                                               | Best for                                   | Sources   |\n|-------------------------------|--------------------------------------------------------------|--------------------------------------------|-----------|\n| Prefill-Time Intervention (PTI) | Intervenes in initial representations to prevent error accumulation | Reducing hallucinatory outputs significantly | [3]       |\n| MPD (Multi-stage Disentangling)  | Disentangles hallucination components while updating parameters selectively | Maintaining generative capability while reducing hallucinations | [1]       |\n\n#### Prefill-Time Intervention (PTI)\nPTI operates at the prefill stage, correcting visual and textual representations to prevent the propagation of errors that lead to hallucinatory outputs. Unlike traditional methods that intervene during decoding, PTI acts early to stabilize the model's responses [3].\n\n#### MPD (Multi-stage Disentangling)\nMPD utilizes a dual-stage process that implies semantic-aware disentanglement of hallucination components. This method allows for targeted updates to parameters, minimizing impact on the overall performance of the model while effectively reducing hallucinations [1].",
+  "followups": [
+   "What are the specific improvements in performance metrics achieved by each method?",
+   "Are there any drawbacks or limitations associated with PTI or MPD?",
+   "How do these methods compare to traditional fine-tuning techniques in terms of computational cost?"
+  ],
+  "sources": [
+   {
+    "n": 1,
+    "title": "Mitigating Hallucinations in Large Vision-Language Models without Performance Degradation",
+    "authors": "Xingyu Zhu; Junfeng Fang; Shuo Wang; Beier Zhu; Zhicai Wang; Yonghui Yang; Xiangnan He",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.20366v1",
+    "paper_id": "2604.20366v1",
+    "excerpt": "We evaluate the effectiveness of our method on object hallucination using the CHAIR benchmark, which includes both sentence- level (CHAIRS) and…",
+    "evidence": "provided in Appendix B. 4.2 Performance on Object Hallucinations (RQ1) To evaluate MPD’s effectiveness in mitigating ob- ject hallucinations, we conduct experiments on CHAIR and POPE, followed by an analysis of hid- den representation alignment. Results on CHAIR. We evaluate the effectiveness of our method on object hallucination using the CHAIR benchmark, which includes both sentence- level (CHAIRS) and instance-level (CHAIRI) hal- lucination metrics, as well as BLEU for caption quality. Table 1 summarizes the performance across three representative LVLMs. • Obs 1: MPD significantly reduces sentence-"
+   },
+   {
+    "n": 2,
+    "title": "Decoding by Perturbation: Mitigating MLLM Hallucinations via Dynamic Textual Perturbation",
+    "authors": "Sihang Jia; Shuliang Liu; Songbo Yang; Yibo Yan; Xin Zou; Xuming Hu",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.12424v1",
+    "paper_id": "2604.12424v1",
+    "excerpt": "In: Proceedings of the Computer Vision and Pattern Recognition Conference.",
+    "evidence": "DeP 15 References 1. An, W., Tian, F., Leng, S., Nie, J., Lin, H., Wang, Q., Chen, P., Zhang, X., Lu, S.: Mitigating object hallucinations in large vision-language models with assembly of global and local attention. In: Proceedings of the Computer Vision and Pattern Recognition Conference. pp. 29915–29926 (2025) 2. Bai, Z., Wang, P., Xiao, T., He, T., Han, Z., Zhang, Z., Shou, M.Z.: Hallucination of multimodal large language models: A survey. arXiv preprint arXiv:2404.18930 (2024) 3. Chen, J., He, J., Shao, Q., Chen, Q., Ying, J., Xu, H., Chen, J., Zheng, J., Wu, J.: Mitigating hallucination of large vision-language models via dynamic logits calibration. arXiv preprint arXiv:2506.21509 (2025) 4. Chen, J., Zhang, T., Huang, S., Niu, Y., Zhang, L., Wen, L., Hu, X.: Ict: Image- object cross-level trusted intervention for mitigating object hallucination in large vision-language models. In: Proceedings of the Computer Vision and Pattern Recognition Conference. pp. 4209–4221 (2025) 5. Chen, L., Li, J., Dong, X., Zhang, P., He, C., Wang, J., Zhao, F., Lin, D.: Sharegpt4v: Improving large multi-modal models with better captions. In: Eu- ropean Conference on Computer Vision. pp. 370–387. Springer (2024) 6. Chen, W., Yan, X., Wen, B., Yang, F., Gao, T., Zhang, D., Chen, L.: Decou- pling contrastive decoding: Robust hallucination mitigation in multimodal large language models. arXiv preprint arXiv:2504.08809 (2025) 7. Chen, Y., Wang, P., Qin, G., Wu, W., Chen, M., Hao, Y.: Attention…"
+   },
+   {
+    "n": 3,
+    "title": "Prefill-Time Intervention for Mitigating Hallucination in Large Vision-Language Models",
+    "authors": "Chengsheng Zhang; Chenghao Sun; Xinyan Jiang; Wei Li; Xinmei Tian",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.25642v1",
+    "paper_id": "2604.25642v1",
+    "excerpt": "Nullu: Mitigating object hallucinations in large vision-language models via halluspace projection.",
+    "evidence": "2025. 1 [55] Le Yang, Ziwei Zheng, Boxu Chen, Zhengyu Zhao, Chenhao Lin, and Chao Shen. Nullu: Mitigating object hallucinations in large vision-language models via halluspace projection. In Proceedings of the Computer Vision and Pattern Recognition Conference, pages 14635–14645, 2025. 1, 2, 4 [56] Hao Yin, Guangzong Si, and Zilei Wang. Clearsight: Vi- sual signal enhancement for object hallucination mitigation in multimodal large language models. In Proceedings of the Computer Vision and Pattern Recognition Conference, pages 14625–14634, 2025. 1, 3 [57] Shukang Yin, Chaoyou Fu, Sirui Zhao, Ke Li, Xing Sun, Tong Xu, and Enhong Chen. A survey on multimodal large language models. National Science Review, 11(12): nwae403, 2024. 1, 5, 7 [58] Qifan Yu, Juncheng Li, Longhui Wei, Liang Pang, Wen- tao Ye, Bosheng Qin, Siliang Tang, Qi Tian, and Yueting Zhuang. Hallucidoctor: Mitigating hallucinatory toxicity in visual instruction data. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pages 12944–12953, 2024. 1 [59] Xiaohua Zhai, Basil Mustafa, Alexander Kolesnikov, and Lucas Beyer. Sigmoid loss for language image pre-training. In Proceedings of the IEEE/CVF international conference on computer vision, pages 11975–11986, 2023. 3 [60] Muru Zhang, Ofir Press, William Merrill, Alisa Liu, and Noah A. Smith. How language model hallucinations can snowball. In Forty-first International Conference on Ma- chine Learning, 2024. 2"
+   },
+   {
+    "n": 4,
+    "title": "Attention Sinks as Internal Signals for Hallucination Detection in Large Language Models",
+    "authors": "Jakub Binkowski; Kamil Adamczewski; Tomasz Kajdanowicz",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.10697v1",
+    "paper_id": "2604.10697v1",
+    "excerpt": "Large language models frequently exhibit hallucinations: fluent and confident outputs that are factually incorrect or unsupported by the input…",
+    "evidence": "Large language models frequently exhibit hallucinations: fluent and confident outputs that are factually incorrect or unsupported by the input context. While recent hallucination detection methods have explored various features derived from attention maps, the underlying mechanisms they exploit remain poorly understood. In this work, we propose SinkProbe, a hallucination detection method grounded in the observation that hallucinations are deeply entangled with attention sinks - tokens that accumulate disproportionate attention mass during generation - indicating a transition from distributed, input-grounded attention to compressed, prior-dominated computation. Importantly, although sink scores are computed solely from attention maps, we find that the classifier preferentially relies on sinks whose associated value vectors have large norms. Moreover, we show that previous methods implicitly depend on attention sinks by establishing their mathematical relationship to sink scores. Our findings yield a novel hallucination detection method grounded in theory that produces state-of-the-art results across popular datasets and LLMs."
+   },
+   {
+    "n": 5,
+    "title": "HalluClear: Diagnosing, Evaluating and Mitigating Hallucinations in GUI Agents",
+    "authors": "Chao Jin; Wenkui Yang; Hao Sun; Yuqi Liao; Qianyi Jiang; Kai Zhou; Jie Cao; Ran He; Huaibo Huang",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.17284v1",
+    "paper_id": "2604.17284v1",
+    "excerpt": "While progress in GUI agents has been largely driven by industrial-scale training, ungrounded hallucinations often trigger cascading failures in…",
+    "evidence": "While progress in GUI agents has been largely driven by industrial-scale training, ungrounded hallucinations often trigger cascading failures in real-world deployments.Unlike general VLM domains, the GUI agent field lacks a hallucination-focused suite for fine-grained diagnosis, reliable evaluation, and targeted mitigation.To bridge this gap, we introduce HalluClear, a comprehensive suite for hallucination mitigation in GUI agents as a complement to computation-intensive scaling. HalluClear comprises: (1) a GUI-specific hallucination taxonomy derived from empirical failure analysis; (2) a calibrated three-stage evaluation workflow which enhances VLM-as-a-judge reliability via expert-annotated benchmarking and ensemble credibility estimation; and (3) a mitigation scheme based on closed-loop structured reasoning, enabling lightweight continual post-training with cold-start initialization for both generalist and GUI-specialist agents. Experiments across representative agents and public benchmarks demonstrate that post-training on only 9K samples within our suite can significantly reduce hallucinations, thereby improving grounding and action fidelity, offering a compute-efficient pathway to robust GUI automation."
+   }
+  ],
+  "created_at": "2026-10-24T22:41:02+00:00",
+  "kind": "answer",
+  "verified": true,
+  "teaser": "Methods to reduce hallucinations in large language models include Prefill-Time Intervention…"
+ },
+ {
+  "id": "feat04",
+  "question": "Which benchmarks are used to evaluate LLM agents?",
+  "answer_md": "Short answer: LLM agents are evaluated using a variety of benchmarks, including specific ones like LATTICE for decision support in crypto contexts and others such as OSWorld, Windows Agent Arena, and Gym-Anything for tasks in computer environments. These benchmarks assess both intrinsic qualities (like reasoning) and extrinsic outcomes (like economic performance) across distinct domains [1][2][4].\n\n#### Major Benchmarks\n1. **LATTICE**: Focuses on decision support utility in financial tasks, examining how agent outputs assist users in human-in-the-loop workflows [1].\n2. **OSWorld**: Assembles tasks for assessing multimodal agents in computer environments, combining various benchmarks for realistic scenarios [2].\n3. **WebArena**: Aims to evaluate web agents on GUI-based navigation and task completion, requiring interaction with dynamic web environments [2].\n4. **ClawMark**: Designed for evaluating coworker agents through multi-turn tasks across multiple days in a dynamic environment [4].\n\n| Approach | What it changes | Best for | Sources |\n|----------|-----------------|----------|---------|\n| LATTICE  | Evaluates decision support in crypto agents | Financial decision-making | [1] |\n| OSWorld  | Measures performance in computer settings | Computer-use tasks | [2] |\n| WebArena | Assesses web agent navigation and interaction | Web-based tasks | [2] |\n| ClawMark | Evaluates multi-day coworking tasks | Long-term agent collaboration | [4] |\n\n#### Evaluation Methods\nBenchmarks are often categorized by their focus on either intrinsic qualities of reasoning or extrinsic outcomes like economic performance. For instance, LATTICE emphasizes user decision support, while others may concentrate on multi-year task completion rates [1][2]. \n\n#### Limitations\nThe evidence on benchmarks for evaluating LLM agents is broad but not exhaustive, as many benchmarks are still under development and may not cover specialized domains comprehensively. Some benchmarks might focus primarily on outcomes without effectively measuring support for human decision-making [1][4].",
+  "followups": [
+   "How do benchmarks differ in assessing reasoning versus performance?",
+   "What are the challenges in creating new benchmarks for LLM evaluation?",
+   "How does human feedback integrate into these evaluation processes?"
+  ],
+  "sources": [
+   {
+    "n": 1,
+    "title": "LATTICE: Evaluating Decision Support Utility of Crypto Agents",
+    "authors": "Aaron Chan; Tengfei Li; Tianyi Xiao; Angela Chen; Junyi Du; Xiang Ren",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.26235v1",
+    "paper_id": "2604.26235v1",
+    "excerpt": "Deepresearch bench: A comprehensive benchmark for deep research agents.",
+    "evidence": "ui Wang, and Zhendong Mao. Deepresearch bench: A comprehensive benchmark for deep research agents. arXiv preprint arXiv:2506.11763, 2025. Wenjie Tang, Yuan Zhou, Erqiang Xu, Keyan Cheng, Minne Li, and Liquan Xiao. Dsgbench: A diverse strategic game benchmark for evaluating llm-based agents in complex decision-making environments. arXiv preprint arXiv:2503.06047, 2025. Mahmoud Mohammadi, Yipeng Li, Jane Lo, and Wendy Yip. Evaluation and benchmarking of llm agents: A survey. In Proceedings of the 31st ACM SIGKDD Conference on Knowledge Discovery and Data Mining V. 2, pages 6129–6139, 2025. Mohamed Amine Ferrag, Norbert Tihanyi, and Merouane Debbah. From llm reasoning to autonomous ai agents: A comprehensive review. arXiv preprint arXiv:2504.19678, 2025. OpenAI. Openai models. https://platform.openai.com/docs/models, 2025. 15"
+   },
+   {
+    "n": 2,
+    "title": "Odysseys: Benchmarking Web Agents on Realistic Long Horizon Tasks",
+    "authors": "Lawrence Keunho Jang; Jing Yu Koh; Daniel Fried; Ruslan Salakhutdinov",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.24964v1",
+    "paper_id": "2604.24964v1",
+    "excerpt": "In particular, for web browsing, several benchmarks have been proposed to evaluate GUI- based navigation and task completion, requiring agents to…",
+    "evidence": "with more steps, and do a qualitative analysis and identify common failure modes, highlighting key challenges for future work on building robust long-horizon computer-use agents. Our benchmark is publicly released and maintained at https://odysseys-website.pages.dev. 2 Related Work Computer-Use Agents Benchmarks for computer-use agents based on large language models (LLMs) began with synthetic environments such as MiniWoB (Shi et al., 2017; Liu et al., 2018) and WebShop (Yao et al., 2022). More recently, realistic benchmarks such as OSWorld (Xie et al., 2024b), Windows Agent Arena (Bonatti et al., 2025), Gym-Anything (Ag- garwal et al., 2026) and MacOSWorld (Yang et al., 2025) measure the performance of LLM- based agents on OS-level tasks and office suites. AndroidWorld (Rawles et al., 2025) and WorkArena (Drouin et al., 2024) extend coverage to mobile and enterprise domains respec- tively, while AgentBench (Liu et al., 2024) spans web, database, and OS environments. In particular, for web browsing, several benchmarks have been proposed to evaluate GUI- based navigation and task completion, requiring agents to interact through screenshots, clicking, and typing. Mind2Web (Deng et al., 2023) introduced the evaluation of LLM agents in web-based tasks using static webpages. WebArena (Zhou et al., 2024) and VisualWe- bArena (Koh et al., 2024) created dynamic synthetic web environments with execution-based verification that is precise but difficult to scale. Online-Mind2Web (Xue…"
+   },
+   {
+    "n": 3,
+    "title": "Graph-of-Agents: A Graph-based Framework for Multi-Agent LLM Collaboration",
+    "authors": "Sukwon Yun; Jie Peng; Pingzhi Li; Wendong Fan; Jie Chen; James Zou; Guohao Li; Tianlong Chen",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.17148v1",
+    "paper_id": "2604.17148v1",
+    "excerpt": "With an ever-growing zoo of LLMs and benchmarks, the need to orchestrate multiple models for improved task performance has never been more pressing…",
+    "evidence": "With an ever-growing zoo of LLMs and benchmarks, the need to orchestrate multiple models for improved task performance has never been more pressing. While frameworks like Mixture-of-Agents (MoA) attempt to coordinate LLMs, they often fall short in terms of (1) selecting relevant agents, (2) facilitating effective intra-agent communication, and (3) integrating responses efficiently. In this work, we propose Graph-of-Agents (GoA), a new graph-based framework for modeling multi-agent LLM communication. Our approach begins with node sampling, selecting only the most relevant agents by leveraging model cards that summarize each model's domain, task specialization, and other characteristics. Next, we construct edges between the selected agents by evaluating their responses against one another to determine relevance ordering. Directed message passing is then performed from highly relevant agents to less relevant ones to enhance their responses, followed by reverse message passing to refine the original responses of the more relevant agents. Finally, the updated responses are aggregated via graph-based pooling (e.g., max or mean pooling) to produce a single, unified answer. We evaluate GoA on diverse multi-domain benchmarks (MMLU, MMLU-Pro, GPQA) and domain-specific benchmarks (MATH, HumanEval, MedMCQA), with an agent pool of 6 LLMs spanning multiple domains. Surprisingly, GoA achieves superior performance using only 3 selected agents, outperforming recent multi-agent LLM baselines…"
+   },
+   {
+    "n": 4,
+    "title": "ClawMark: A Living-World Benchmark for Multi-Turn, Multi-Day, Multimodal Coworker Agents",
+    "authors": "Fanqing Meng; Lingxiao Du; Zijian Wu; Guanzheng Chen; Xiangyan Liu; Jiaqi Liao; Chonghe Jiang; Zhenglin Wan; Jiawei Gu; Pengfei Zhou; Rui Huang; Ziqi Zhao; Shengyuan Ding; Ailing Yu; Bo Peng; Bowei Xia; Hao Sun; Haotian Liang; Ji Xie; Jiajun Chen; Jiajun Song; Liu Yang; Ming Xu; Qionglin Qiu; Runhao Fu; Shengfang Zhai; Shijian Wang; Tengfei Ma; Tianyi Wu; Weiyang Jin; Yan Wang; Yang Dai; Yao Lai; Youwei Shu; Yue Liu; Yunzhuo Hao; Yuwei Niu; Jinkai Huang; Jiayuan Zhuo; Zhennan Shen; Linyu Wu; Cihang Xie; Yuyin Zhou; Jiaheng Zhang; Zeyu Zheng; Mengkang Hu; Michael Qizhe Shieh",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.23781v1",
+    "paper_id": "2604.23781v1",
+    "excerpt": "References [1] Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik Narasimhan.",
+    "evidence": "References [1] Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik Narasimhan. 𝜏-bench: A benchmark for tool-agent-user interaction in real-world domains. arXiv preprint arXiv:2406.12045, 2024. [2] Alexandre Drouin, Maxime Gasse, Massimo Caccia, Issam H Laradji, Manuel Del Verme, Tom Marty, Léo Boisvert, Megh Thakkar, Quentin Cappart, David Vazquez, et al. Workarena: How capable are web agents at solving common knowledge work tasks? arXiv preprint arXiv:2403.07718, 2024. [3] Frank F Xu, Yufan Song, Boxuan Li, Yuxuan Tang, Kritanjali Jain, Mengxue Bao, Zora Z Wang, Xuhui Zhou, Zhitong Guo, Murong Cao, et al. Theagentcompany: benchmarking llm agents on consequential real world tasks. arXiv preprint arXiv:2412.14161, 2024. [4] Jing Yu Koh, Robert Lo, Lawrence Jang, Vikram Duvvur, Ming Lim, Po-Yu Huang, Graham Neubig, Shuyan Zhou, Russ Salakhutdinov, and Daniel Fried. Visualwebarena: Evaluating multimodal agents on realistic visual web tasks. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 881–905, 2024. [5] Tianbao Xie, Danyang Zhang, Jixuan Chen, Xiaochuan Li, Siheng Zhao, Ruisheng Cao, Toh J Hua, Zhoujun Cheng, Dongchan Shin, Fangyu Lei, et al. Osworld: Benchmarking multimodal agents for open-ended tasks in real computer environments. Advances in Neural Information Processing Systems, 37:52040–52094, 2024. [6] Shuyan Zhou, Frank F Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek Sridhar, Xianyi Cheng, Tianyue…"
+   },
+   {
+    "n": 5,
+    "title": "Time Series Augmented Generation for Financial Applications",
+    "authors": "Anton Kolonin; Alexey Glushchenko; Evgeny Bochkov; Abhishek Saxena",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.19633v1",
+    "paper_id": "2604.19633v1",
+    "excerpt": "Evaluating the reasoning capabilities of Large Language Models (LLMs) for complex, quantitative financial tasks is a critical and unsolved challenge…",
+    "evidence": "Evaluating the reasoning capabilities of Large Language Models (LLMs) for complex, quantitative financial tasks is a critical and unsolved challenge. Standard benchmarks often fail to isolate an agent's core ability to parse queries and orchestrate computations. To address this, we introduce a novel evaluation methodology and benchmark designed to rigorously measure an LLM agent's reasoning for financial time-series analysis. We apply this methodology in a large-scale empirical study using our framework, Time Series Augmented Generation (TSAG), where an LLM agent delegates quantitative tasks to verifiable, external tools. Our benchmark, consisting of 100 financial questions, is used to compare multiple SOTA agents (e.g., GPT-4o, Llama 3, Qwen2) on metrics assessing tool selection accuracy, faithfulness, and hallucination. The results demonstrate that capable agents can achieve near-perfect tool-use accuracy with minimal hallucination, validating the tool-augmented paradigm. Our primary contribution is this evaluation framework and the corresponding empirical insights into agent performance, which we release publicly to foster standardized research on reliable financial AI."
+   }
+  ],
+  "created_at": "2026-10-24T22:41:20+00:00",
+  "kind": "answer",
+  "verified": true,
+  "teaser": "LLM agents are evaluated using a variety of benchmarks, including specific ones like LATTICE…"
+ },
+ {
+  "id": "feat05",
+  "question": "How do vision-language models handle spatial reasoning?",
+  "answer_md": "Short answer: Vision-language models (VLMs) handle spatial reasoning by integrating various inductive biases, such as depth signals and geometric constraints. Approaches like SpatiO implement heterogeneous multi-agent systems to dynamically aggregate outputs from different reasoning strategies, while World2VLM distills spatial understanding into VLMs to enhance dynamic reasoning capabilities [3][4].\n\n#### Heterogeneous Multi-Agent Systems\nSpatiO introduces a multi-agent framework that coordinates multiple specialists with complementary biases, improving spatial reasoning through Adaptive Test-Time Orchestration. This allows for better adaptability to changing conditions as it combines diverse reasoning strategies rather than relying on a single, fixed model design [3].\n\n#### Dynamic Spatial Reasoning\nWorld2VLM addresses limitations by integrating world models that guide the training of VLMs, providing structured supervision for both forward and inverse reasoning. This method allows VLMs to internalize dynamic spatial structures rather than relying on external modules at inference, resulting in improved understanding of motion and perspective changes [4].\n\n| Approach        | What it changes                                | Best for                              | Sources |\n|------------------|------------------------------------------------|---------------------------------------|---------|\n| SpatiO           | Utilizes diverse reasoning strategies          | Context-dependent spatial reasoning    | [3]     |\n| World2VLM        | Distills world model understanding into VLMs  | Dynamic spatial reasoning              | [4]     |",
+  "followups": [
+   "How do different reasoning strategies impact performance in spatial tasks?",
+   "What benchmarks are used to evaluate spatial reasoning capabilities in VLMs?",
+   "What are the main challenges faced by vision-language models in spatial reasoning?"
+  ],
+  "sources": [
+   {
+    "n": 1,
+    "title": "Do MLLMs Understand Pointing? Benchmarking and Enhancing Referential Reasoning in Egocentric Vision",
+    "authors": "Chentao Li; Zirui Gao; Mingze Gao; Yinglian Ren; Jianjiang Feng; Jie Zhou",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.21461v1",
+    "paper_id": "2604.21461v1",
+    "excerpt": "Egocentric AI agents, such as smart glasses, rely on pointing gestures to resolve referential ambiguities in natural language commands. However…",
+    "evidence": "Egocentric AI agents, such as smart glasses, rely on pointing gestures to resolve referential ambiguities in natural language commands. However, despite advancements in Multimodal Large Language Models (MLLMs), current systems often fail to precisely ground the spatial semantics of pointing. Instead, they rely on spurious correlations with visual proximity or object saliency, a phenomenon we term \"Referential Hallucination.\" To address this gap, we introduce EgoPoint-Bench, a comprehensive question-answering benchmark designed to evaluate and enhance multimodal pointing reasoning in egocentric views. Comprising over 11k high-fidelity simulated and real-world samples, the benchmark spans five evaluation dimensions and three levels of referential complexity. Extensive experiments demonstrate that while state-of-the-art proprietary and open-source models struggle with egocentric pointing, models fine-tuned on our synthetic data achieve significant performance gains and robust sim-to-real generalization. This work highlights the importance of spatially aware supervision and offers a scalable path toward precise egocentric AI assistants. Project page: https://guyyyug.github.io/EgoPoint-Bench/"
+   },
+   {
+    "n": 2,
+    "title": "Spatio-Temporal Grounding of Large Language Models from Perception Streams",
+    "authors": "Jacob Anderson; Bardh Hoxha; Georgios Fainekos; Hideki Okamoto; Danil Prokhorov",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.07592v1",
+    "paper_id": "2604.07592v1",
+    "excerpt": "Embodied-AI agents must reason about how objects move and interact in 3-D space over time, yet existing smaller frontier Large Language Models (LLMs)…",
+    "evidence": "Embodied-AI agents must reason about how objects move and interact in 3-D space over time, yet existing smaller frontier Large Language Models (LLMs) still mis-handle fine-grained spatial relations, metric distances, and temporal orderings. We introduce the general framework Formally Explainable Spatio-Temporal Scenes (FESTS) that injects verifiable spatio-temporal supervision into an LLM by compiling natural-language queries into Spatial Regular Expression (SpRE) -- a language combining regular expression syntax with S4u spatial logic and extended here with universal and existential quantification. The pipeline matches each SpRE against any structured video log and exports aligned (query, frames, match, explanation) tuples, enabling unlimited training data without manual labels. Training a 3-billion-parameter model on 27k such tuples boosts frame-level F1 from 48.5% to 87.5%, matching GPT-4.1 on complex spatio-temporal reasoning while remaining two orders of magnitude smaller, and, hence, enabling spatio-temporal intelligence for Video LLM."
+   },
+   {
+    "n": 3,
+    "title": "SpatiO: Adaptive Test-Time Orchestration of Vision-Language Agents for Spatial Reasoning",
+    "authors": "Chan Yeong Hwang; Miso Choi; Sunghyun On; Jinkyu Kim; Jungbeom Lee",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.21190v2",
+    "paper_id": "2604.21190v2",
+    "excerpt": "Understanding visual scenes requires not only recognizing objects but also reasoning about their spatial relationships.",
+    "evidence": "SpatiO: Adaptive Test-Time Orchestration of Vision-Language Agents for Spatial Reasoning Chan Yeong Hwang1, Miso Choi1, Sunghyun On3, Jinkyu Kim1,2, and Jungbeom Lee1 1 Korea University, Seoul, South Korea {flaxinger, miso8070, jinkyukim, jbeomlee}@korea.ac.kr 2 Kakao Mobility Corp., Seongnam, South Korea 3 Handong Global University, Pohang, South Korea 22100457@handong.ac.kr Abstract. Understanding visual scenes requires not only recognizing objects but also reasoning about their spatial relationships. Unlike gen- eral vision-language tasks, spatial reasoning requires integrating multiple inductive biases, such as 2D appearance cues, depth signals, and geo- metric constraints, whose reliability varies across contexts. This suggests that effective spatial reasoning requires spatial adaptability: the ability to flexibly coordinate different reasoning strategies depending on the input. However, most existing approaches rely on a single reasoning pipeline that implicitly learns a fixed spatial prior, limiting their ability to adapt under distribution changes. Multi-agent systems offer a promising alter- native by aggregating diverse reasoning trajectories, but prior attempts in spatial reasoning primarily employ homogeneous agents, restricting the diversity of inductive biases they can leverage. In this work, we in- troduce SpatiO, a heterogeneous multi-agent framework for spatial rea- soning that coordinates multiple vision-language specialists with comple- mentary inductive…"
+   },
+   {
+    "n": 4,
+    "title": "World2VLM: Distilling World Model Imagination into VLMs for Dynamic Spatial Reasoning",
+    "authors": "Wanyue Zhang; Wenxiang Wu; Wang Xu; Jiaxin Luo; Helu Zhi; Yibin Huang; Shuo Ren; Zitao Liu; Jiajun Zhang",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.26934v1",
+    "paper_id": "2604.26934v1",
+    "excerpt": "Recent camera- centric and ego-centric multi-view studies further suggest that this gap persists even when richer viewpoint informa- tion is…",
+    "evidence": "ing, where models often rely on shallow pattern matching rather than genuine spatial understanding. Recent camera- centric and ego-centric multi-view studies further suggest that this gap persists even when richer viewpoint informa- tion is available, indicating that camera motion itself re- mains a central reasoning bottleneck [18, 32]. Existing attempts to address this limitation largely fol- low two directions. The first is to scale spatial supervision through synthetic data, simulation, and broader benchmark construction [7, 12, 23, 26, 38, 60, 61, 63]. While useful, these approaches typically provide static supervision sig- nals and do not explicitly model how observations evolve under actions. The second is to couple VLMs with world models or imagination-based reasoning procedures at infer- ence time [6, 15, 28, 34, 52, 55]. Although this can im- prove dynamic spatial reasoning, it incurs substantial test- time overhead and leaves the VLM itself largely unchanged. This leads to a natural question: Can a world model serve as a training-time teacher that distills spatial imagination into a vision-language model? Recent evidence also suggests that world-model priors can be transferred into VLM representations themselves, but ex- isting efforts do not center action-aligned view-transition supervision for dynamic spatial reasoning [65]. In this work, we answer this question with World2VLM, a training framework that treats a generative world model as a training-time teacher…"
+   },
+   {
+    "n": 5,
+    "title": "WorldMAP: Bootstrapping Vision-Language Navigation Trajectory Prediction with Generative World Models",
+    "authors": "Hongjin Chen; Shangyun Jiang; Tonghua Su; Chen Gao; Xinlei Chen; Yong Li; Zhibo Chen",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.07957v1",
+    "paper_id": "2604.07957v1",
+    "excerpt": "Vision-language models (VLMs) and generative world models are opening new opportunities for embodied navigation. VLMs are increasingly used as direct…",
+    "evidence": "Vision-language models (VLMs) and generative world models are opening new opportunities for embodied navigation. VLMs are increasingly used as direct planners or trajectory predictors, while world models support look-ahead reasoning by imagining future views. Yet predicting a reliable trajectory from a single egocentric observation remains challenging. Current VLMs often generate unstable trajectories, and world models, though able to synthesize plausible futures, do not directly provide the grounded signals needed for navigation learning. This raises a central question: how can generated futures be turned into supervision for grounded trajectory prediction? We present WorldMAP, a teacher--student framework that converts world-model-generated futures into persistent semantic-spatial structure and planning-derived supervision. Its world-model-driven teacher builds semantic-spatial memory from generated videos, grounds task-relevant targets and obstacles, and produces trajectory pseudo-labels through explicit planning. A lightweight student with a multi-hypothesis trajectory head is then trained to predict navigation trajectories directly from vision-language inputs. On Target-Bench, WorldMAP achieves the best ADE and FDE among compared methods, reducing ADE by 18.0% and FDE by 42.1% relative to the best competing baseline, while lifting a small open-source VLM to DTW performance competitive with proprietary models. More broadly, the results suggest that, in embodied…"
+   }
+  ],
+  "created_at": "2026-10-24T22:41:50+00:00",
+  "kind": "answer",
+  "verified": true,
+  "teaser": "Vision-language models (VLMs) handle spatial reasoning by integrating various inductive…"
+ },
+ {
+  "id": "feat06",
+  "question": "What are the main approaches to robot learning from demonstrations?",
+  "answer_md": "Short answer: The main approaches to robot learning from demonstrations include trajectory-based methods using statistical models (like Hidden Markov Models and Gaussian Mixture Models), reinforcement learning integrated with temporal logic for trajectory repair, and frameworks that leverage human-robot interaction through teleoperation. These methods vary in their focus on robustness, interpretability, and adaptability across different tasks and environments [1][2][4].\n\n#### Comparison of Approaches to Robot Learning from Demonstrations\n\n| Approach                                          | What it changes                                   | Best for                                                  | Sources |\n|--------------------------------------------------|--------------------------------------------------|----------------------------------------------------------|---------|\n| Statistical Model Learning (HMMs, GMMs)          | Focuses on trajectory extraction and filtering    | Generalized path learning from multiple demonstrations    | [1]     |\n| Reinforcement Learning with Temporal Logic        | Enhances policy learning with formal guarantees   | Situations requiring robustness in unpredictable environments| [4]     |\n| Human-Robot Interaction via Teleoperation         | Allows for active human guidance during policy execution | Effective in limited demonstration scenarios                | [2]     |\n\n#### Trajectory-Based Methods\nThese involve the use of statistical models to learn and generalize from multiple demonstrations. Techniques like Hidden Markov Models and Gaussian Mixture Models are commonly employed to filter and extract trajectories for robust learning [1].\n\n#### Reinforcement Learning Integration\nThis approach incorporates formal methods to repair suboptimal trajectories and shape rewards based on the learning process, thus ensuring more consistent and high-quality results during robot training. It is especially beneficial in environments prone to variability and compounding errors [4].\n\n#### Human-Robot Interaction Frameworks\nMethods that facilitate interactive learning through teleoperation allow for real-time human intervention, making the learning process more efficient. By integrating human feedback, these frameworks improve the adaptability of robot behaviors in complex tasks [2].",
+  "followups": [
+   "What advantages do trajectory-based methods have over reinforcement learning approaches?",
+   "How do interactive learning frameworks improve robot adaptability?",
+   "What challenges are associated with using statistical models in robot learning from demonstrations?"
+  ],
+  "sources": [
+   {
+    "n": 1,
+    "title": "A Unified Multi-Layer Framework for Skill Acquisition from Imperfect Human Demonstrations",
+    "authors": "Zi-Qi Yang; Mehrdad R. Kermani",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.08341v1",
+    "paper_id": "2604.08341v1",
+    "excerpt": "Extensive experimental validation on a KUKA LWR IV+ robot confirmed the framework’s effectiveness and practical feasibility.",
+    "evidence": "measurement nor estimation and relies only on a limited knowledge of the robot’s dynamics. Extensive experimental validation on a KUKA LWR IV+ robot confirmed the framework’s effectiveness and practical feasibility. REFERENCES [1] A. Coates, P. Abbeel, and A. Y. Ng, “Learning for control from multiple demonstrations,” in Proceedings of the 25th international conference on Machine learning, 2008, pp. 144–151. [2] M. Sakr, Z. J. Li, H. M. Van der Loos, D. Kuli´c, and E. A. Croft, “Quantifying demonstration quality for robot learning and general- ization,” IEEE Robotics and Automation Letters, vol. 7, no. 4, pp. 9659–9666, 2022. [3] G. E. Hovland, P. Sikka, and B. J. McCarragher, “Skill acquisition from human demonstration using a hidden markov model,” in Pro- ceedings of IEEE international conference on robotics and automation, vol. 3. Ieee, 1996, pp. 2706–2711. [4] S. Chernova and M. Veloso, “Confidence-based policy learning from demonstration using gaussian mixture models,” in Proceedings of the 6th international joint conference on Autonomous agents and multiagent systems, 2007, pp. 1–8. [5] M. Schneider and W. Ertel, “Robot learning by demonstration with local gaussian process regression,” in 2010 IEEE/RSJ International Conference on Intelligent Robots and Systems. IEEE, 2010, pp. 255– 260. [6] C. Chen, C. Yang, C. Zeng, N. Wang, and Z. Li, “Robot learning from multiple demonstrations with dynamic movement primitive,” in 2017 2nd International Conference on Advanced…"
+   },
+   {
+    "n": 2,
+    "title": "Human-Robot Copilot for Data-Efficient Imitation Learning",
+    "authors": "Rui Yan; Zaitian Gongye; Lars Paulsen; Xuxin Cheng; Xiaolong Wang",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.03613v1",
+    "paper_id": "2604.03613v1",
+    "excerpt": "Collecting human demonstrations via teleoperation is a common approach for teaching robots task-specific skills. However, when only a limited number…",
+    "evidence": ". 3 [23] A. Mandlekar, D. Xu, J. Wong, S. Nasiriany, C. Wang, R. Kulkarni, L. Fei-Fei, S. Savarese, Y. Zhu, and R. Mart´ın-Mart´ın, “What matters in learning from offline human demonstrations for robot manipula- tion,” in arXiv preprint arXiv:2108.03298, 2021. 5"
+   },
+   {
+    "n": 3,
+    "title": "BridgeACT: Bridging Human Demonstrations to Robot Actions via Unified Tool-Target Affordances",
+    "authors": "Yifan Han; Jianxiang Liu; Haoyu Zhang; Yuqi Gu; Yunhan Guo; Wenzhao Lian",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.23249v1",
+    "paper_id": "2604.23249v1",
+    "excerpt": "Learning robot manipulation from human videos is appealing due to the scale and diversity of human demonstrations, but transferring such…",
+    "evidence": "Learning robot manipulation from human videos is appealing due to the scale and diversity of human demonstrations, but transferring such demonstrations to executable robot behavior remains challenging. Prior work either relies on robot data for downstream adaptation or learns affordance representations that remain at the perception level and do not directly support real-world execution. We present BridgeACT, an affordance-driven framework that learns robotic manipulation directly from human videos without requiring any robot demonstration data. Our key idea is to model affordance as an embodiment-agnostic intermediate representation that bridges human demonstrations and robot actions. BridgeACT decomposes manipulation into two complementary problems: where to grasp and how to move. To this end, BridgeACT first grounds task-relevant affordance regions in the current scene, and then predicts task-conditioned 3D motion affordances from human demonstrations. The resulting affordances are mapped to robot actions through a grasping module and a lightweight closed-loop motion controller, enabling direct deployment on real robots. In addition, we represent complex manipulation tasks as compositions of affordance operations, which allows a unified treatment of diverse tasks and object-to-object interactions. Experiments on real-world manipulation tasks show that BridgeACT outperforms prior baselines and generalizes to unseen objects, scenes, and viewpoints."
+   },
+   {
+    "n": 4,
+    "title": "Learning from Imperfect Demonstrations via Temporal Behavior Tree-Guided Trajectory Repair",
+    "authors": "Aniruddh G. Puranic; Sebastian Schirmer; John S. Baras; Calin Belta",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.04225v1",
+    "paper_id": "2604.04225v1",
+    "excerpt": "The TBT specification T governs both the repair of suboptimal demonstrations and the construction of the TBT monitor and reward potentials used…",
+    "evidence": "Demonstrations D TBT Repair Cleaned Dataset Drepair TBT Spec T RL Training TBT Monitor + Potentials Policy π Data Preparation Policy Learning Figure 1: Overview of the proposed framework. The TBT specification T governs both the repair of suboptimal demonstrations and the construction of the TBT monitor and reward potentials used during RL training. tracted from the repaired trajectories to construct dense reward signals for reinforcement learning (RL), reducing the need for manual reward engineering; and (3) policy learning, where the potential- based reward and the TBT online monitor [3] are used to train a robust policy on the environment. A central advantage of the proposed framework is that it preserves interpretability and structural guarantees. By operating within the formal logic of TBTs, the learned policies inherit well-defined semantics and can be subject to formal verification. Furthermore, since the potential functions are extracted purely from demonstrated state trajectories in pose space, the reward shaping signal is in- dependent of the agent’s specific kinematic model, making the framework directly applicable across robotic platforms obeying different kinematic models (e.g., Ackermann, Dubins, or unicycle dynam- ics), without modification to the reward shaping pipeline. The key insight is that formal trajectory repair produces specification-consistent state sequences that serve as a kinematic-model-agnostic supervisory signal for policy learning, bridging…"
+   },
+   {
+    "n": 5,
+    "title": "Optimizing Neurorobot Policy under Limited Demonstration Data through Preference Regret",
+    "authors": "Viet Dung Nguyen; Yuhang Song; Anh Nguyen; Jamison Heard; Reynold Bailey; Alexander Ororbia",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.03523v1",
+    "paper_id": "2604.03523v1",
+    "excerpt": "Robot reinforcement learning from demonstrations (RLfD) assumes that expert data is abundant; this is usually unrealistic in the real world given…",
+    "evidence": "Robot reinforcement learning from demonstrations (RLfD) assumes that expert data is abundant; this is usually unrealistic in the real world given data scarcity as well as high collection cost. Furthermore, imitation learning algorithms assume that the data is independently and identically distributed, which ultimately results in poorer performance as gradual errors emerge and compound within test-time trajectories. We address these issues by introducing the \"master your own expertise\" (MYOE) framework, a self-imitation framework that enables robotic agents to learn complex behaviors from limited demonstration data samples. Inspired by human perception and action, we propose and design what we call the queryable mixture-of-preferences state space model (QMoP-SSM), which estimates the desired goal at every time step. These desired goals are used in computing the \"preference regret\", which is used to optimize the robot control policy. Our experiments demonstrate the robustness, adaptability, and out-of-sample performance of our agent compared to other state-of-the-art RLfD schemes. The GitHub repository that supports this work can be found at: https://github.com/rxng8/neurorobot-preference-regret-learning."
+   }
+  ],
+  "created_at": "2026-10-24T22:42:12+00:00",
+  "kind": "answer",
+  "verified": true,
+  "teaser": "The main approaches to robot learning from demonstrations include trajectory-based methods…"
+ },
+ {
+  "id": "feat07",
+  "question": "How are diffusion models made faster at inference time?",
+  "answer_md": "Short answer: Diffusion models can be made faster at inference time through techniques like parallel decoding, targeted masking, and the use of discrete diffusion policies that reduce computational costs. For example, the FRIGID model achieves significant speed improvements by utilizing a sequence-based architecture, allowing for efficient inference that dynamically corrects errors during the process, while the DiscreteRTC method integrates asynchronous execution with lower overall computational demands compared to traditional methods.\n\n#### Parallel Decoding and Targeted Masking\nFRIGID employs a parallel decoding scheme and focuses on targeted masking of inconsistent subgraphs, leading to a 20× inference speedup over traditional graph-based diffusion models, which often incur slow inference times due to complex operations [1].\n\n#### Discrete Diffusion Policies\nDiscreteRTC enhances performance by replacing autoregressive generation with parallel unmasking in discrete diffusion. This approach allows early exiting from inference when required tokens are unmasked, effectively lowering inference costs and improving speed [4].\n\n#### Comparison of Approaches\n\n| Approach            | What it changes                                           | Best for                                        | Sources    |\n|---------------------|----------------------------------------------------------|------------------------------------------------|------------|\n| FRIGID              | Uses efficient parallel decoding and targeted masking    | Fast inference in molecular generation          | [1]        |\n| DiscreteRTC         | Implements asynchronous execution with discrete diffusion | Real-time control with lower computational costs| [4]        |",
+  "followups": [
+   "How can the structural advantages of these methods be further exploited?",
+   "What specific applications can benefit from faster diffusion model inference?",
+   "Are there trade-offs between speed and accuracy in these approaches?"
+  ],
+  "sources": [
+   {
+    "n": 1,
+    "title": "FRIGID: Scaling Diffusion-Based Molecular Generation from Mass Spectra at Training and Inference Time",
+    "authors": "Montgomery Bohde; Hongxuan Liu; Mrunali Manjrekar; Magdalena Lederbauer; Shuiwang Ji; Runzhong Wang; Connor W. Coley",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.16648v1",
+    "paper_id": "2604.16648v1",
+    "excerpt": "Inference- time scaling for diffusion models beyond scaling denois- ing steps, 2025.",
+    "evidence": ", S. Inference- time scaling for diffusion models beyond scaling denois- ing steps, 2025. URL https://arxiv.org/abs/ 2501.09732. Manjrekar, M., Bohde, M., Liu, H., Lederbauer, M., Wang, R., and Coley, C. W. Generative structural elucida- tion from mass spectra as an iterative optimization prob- lem, 2026. URL https://arxiv.org/abs/2602. 07709. Mismetti, L., Alberts, M., Krause, A., and Graziani, M. Test- time tuned language models enable end-to-end de novo molecular structure generation from ms/ms spectra, 2026. URL https://arxiv.org/abs/2510.23746. Neo, N. K. N., Lim, J., Zhau, P. N. Y., Ting, S. K. X., and Shen, B. One small step with fingerprints, one giant leap for De Novo molecule generation from mass spec- tra, 2025. URL https://arxiv.org/abs/2508. 04180. NIST. NIST standard reference database. National Institute of Standards and Technology, 2023. URL https:// www.nist.gov/srd. Noutahi, E., Gabellini, C., Craig, M., Lim, J. S. C., and Tossou, P. Gotta be SAFE: A new framework for molecu- lar design, 2023. URL https://arxiv.org/abs/ 2310.10773. Prudent, R., Annis, D. A., Dandliker, P. J., Ortholand, J.- Y., and Roche, D. Exploring new targets and chemical space with affinity selection-mass spectrometry. Nature Reviews Chemistry, 5(1):62–71, 2021. Qiang, H., Wang, F., Lu, W., Xing, X., Kim, H., M´erette, S. A. M., Ayres, L. B., Oler, E., AbuSalim, J. E., Roichman, A., Neinast, M., Cordova, R. A., Lee, W. D., Herbst, E., Gupta, V., Neff, S. L., Hiebert-Giesbrecht, M…"
+   },
+   {
+    "n": 2,
+    "title": "Lost in Diffusion: Uncovering Hallucination Patterns and Failure Modes in Diffusion Large Language Models",
+    "authors": "Zhengnan Guo; Fei Tan",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.10556v1",
+    "paper_id": "2604.10556v1",
+    "excerpt": "While Diffusion Large Language Models (dLLMs) have emerged as a promising non-autoregressive paradigm comparable to autoregressive (AR) models, their…",
+    "evidence": "While Diffusion Large Language Models (dLLMs) have emerged as a promising non-autoregressive paradigm comparable to autoregressive (AR) models, their faithfulness, specifically regarding hallucination, remains largely underexplored. To bridge this gap, we present the first controlled comparative study to evaluate hallucination patterns in dLLMs. Our results demonstrate that current dLLMs exhibit a higher propensity for hallucination than AR counterparts controlled for architecture, scale, and pre-training weights. Furthermore, an analysis of inference-time compute reveals divergent dynamics: while quasi-autoregressive generation suffers from early saturation, non-sequential decoding unlocks potential for continuous refinement. Finally, we identify distinct failure modes unique to the diffusion process, including premature termination, incomplete denoising, and context intrusion. Our findings underscore that although dLLMs have narrowed the performance gap on general tasks, their distinct hallucination mechanisms pose a critical challenge to model reliability. Our code is available at https://github.com/ZeroLoss-Lab/Lost-in-Diffusion"
+   },
+   {
+    "n": 3,
+    "title": "Smoothing the Landscape: Causal Structure Learning via Diffusion Denoising Objectives",
+    "authors": "Hao Zhu; Di Zhou; Donna Slonim",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.02250v1",
+    "paper_id": "2604.02250v1",
+    "excerpt": "Understanding causal dependencies in observational data is critical for informing decision-making. These relationships are often modeled as Bayesian…",
+    "evidence": "Understanding causal dependencies in observational data is critical for informing decision-making. These relationships are often modeled as Bayesian Networks (BNs) and Directed Acyclic Graphs (DAGs). Existing methods, such as NOTEARS and DAG-GNN, often face issues with scalability and stability in high-dimensional data, especially when there is a feature-sample imbalance. Here, we show that the denoising score matching objective of diffusion models could smooth the gradients for faster, more stable convergence. We also propose an adaptive k-hop acyclicity constraint that improves runtime over existing solutions that require matrix inversion. We name this framework Denoising Diffusion Causal Discovery (DDCD). Unlike generative diffusion models, DDCD utilizes the reverse denoising process to infer a parameterized causal structure rather than to generate data. We demonstrate the competitive performance of DDCDs on synthetic benchmarking data. We also show that our methods are practically useful by conducting qualitative analyses on two real-world examples. Code is available at this url: https://github.com/haozhu233/ddcd."
+   },
+   {
+    "n": 4,
+    "title": "DiscreteRTC: Discrete Diffusion Policies are Natural Asynchronous Executors",
+    "authors": "Pengcheng Wang; Kaiwen Hong; Chensheng Peng; Katherine Driggs-Campbell; Masayoshi Tomizuka; Chenfeng Xu; Chen Tang",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.25050v1",
+    "paper_id": "2604.25050v1",
+    "excerpt": "Instead, our key insight and observation are that by replacing the action head with a discrete diffusion policy [26], all the aforementioned…",
+    "evidence": ", 25] seek to resolve these aforementioned issues within the flow- matching paradigm. Instead, our key insight and observation are that by replacing the action head with a discrete diffusion policy [26], all the aforementioned limitations can be resolved at once. Or, to put it simply: Discrete Diffusion Policies are Natural Asynchronous Executors: (a) Inpainting as Pre-training. Discrete diffusion policies are pre-trained to inpaint upon ran- domly masked sequences. Therefore, scaling pre-training directly improves asynchronous performance, and the native forward pass suits inference-time inpainting; (b) Fine-tuning Free. As a consequence, inpainting-specific patterns are implicitly introduced during pre-training, making discrete diffusion a fine-tuning-free approach for high-quality, out-of-the-box asynchronous execution; (c) Natural Guidance. Moreover, with discrete diffusion policies, we can early-exit inference once the necessary action tokens are unmasked, leaving the remaining masking pattern as an adaptive and natural guidance for the next inference; (d) Lower Inference Cost. Finally, with committed tokens from previous chunks, the tokens to unmask per inference is reduced, leading to lower inference cost for inpainting. We propose the resulting async execution method, DiscreteRTC, which replaces the external cor- rectiosn in flow-matching-based RTC with the native unmasking operation of discrete diffusion poli- cies. Experiments on the dynamic simulated benchmark…"
+   },
+   {
+    "n": 5,
+    "title": "Who Defines Fairness? Target-Based Prompting for Demographic Representation in Generative Models",
+    "authors": "Marzia Binta Nizam; James Davis",
+    "year": "2026",
+    "url": "https://arxiv.org/abs/2604.21036v1",
+    "paper_id": "2604.21036v1",
+    "excerpt": "Text-to-image(T2I) models like Stable Diffusion and DALL-E have made generative AI widely accessible, yet recent studies reveal that these systems…",
+    "evidence": "Text-to-image(T2I) models like Stable Diffusion and DALL-E have made generative AI widely accessible, yet recent studies reveal that these systems often replicate societal biases, particularly in how they depict demographic groups across professions. Prompts such as 'doctor' or 'CEO' frequently yield lighter-skinned outputs, while lower-status roles like 'janitor' show more diversity, reinforcing stereotypes. Existing mitigation methods typically require retraining or curated datasets, making them inaccessible to most users. We propose a lightweight, inference-time framework that mitigates representational bias through prompt-level intervention without modifying the underlying model. Instead of assuming a single definition of fairness, our approach allows users to select among multiple fairness specifications-ranging from simple choices such as a uniform distribution to more complex definitions informed by a large language model(LLM) that cites sources and provides confidence estimates. These distributions guide the construction of demographic specific prompt variants in the corresponding proportions, and we evaluate alignment by auditing adherence to the declared target and measuring the resulting skin tone distribution rather than assuming uniformity as 'fairness'. Across 36 prompts spanning 30 occupations and 6 non-occupational contexts, our method shifts observed skin-tone outcomes in directions consistent with the declared target, and reduces deviation from targets when…"
+   }
+  ],
+  "created_at": "2026-10-24T22:42:41+00:00",
+  "kind": "answer",
+  "verified": true,
+  "teaser": "Diffusion models can be made faster at inference time through techniques like parallel…"
+ }
+]

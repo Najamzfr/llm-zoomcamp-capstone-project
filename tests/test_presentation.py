@@ -9,7 +9,6 @@ from pathlib import Path
 
 from research_assistant.presentation import (
     abstract_excerpt,
-    bibtex,
     clean_excerpt,
     format_date,
     link_citations,
@@ -55,14 +54,6 @@ class PresentationTests(unittest.TestCase):
         self.assertEqual(clean_excerpt(noisy),
                          "We show that adaptive rank allocation improves accuracy under a fixed parameter budget.")
         self.assertEqual(clean_excerpt("Table 3 | 0.91 | 0.88 | 12.4"), "")
-
-    def test_bibtex(self):
-        bib = bibtex([{"paper_id": "2604.12345v1", "title": "A {Study}", "authors": "Ann Lee, Bo Chen",
-                       "submitted_date": "2026-04-01", "category": "cs.CL"}])
-        self.assertIn("@misc{arxiv260412345,", bib)
-        self.assertIn("author = {Ann Lee and Bo Chen}", bib)
-        self.assertIn("title = {{A Study}}", bib)
-        self.assertIn("eprint = {2604.12345v1}", bib)
 
 
 class StubVector:

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paper Scout feature mockups</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root { --paper:#f7f6f3; --surface:#fff; --sunk:#efede8; --line:#e2dfd8; --ink:#1f1d1a; --ink2:#5b574f;
+        --accent:#1d4ed8; --accent-soft:#e3eafc; --ok:#1a7f4b; --ok-soft:#e3f2ea; --bad:#b42318; --bad-soft:#fbe9e7; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 'IBM Plex Sans', system-ui, sans-serif; }
+main { max-width: 1180px; margin: 0 auto; padding: 32px 16px 80px; }
+h1 { font: 500 34px/1.2 'Newsreader', Georgia, serif; margin: 0 0 6px; }
+h2.mock { font: 600 13px 'IBM Plex Sans'; text-transform: uppercase; letter-spacing: .06em; color: var(--ink2);
+          margin: 56px 0 10px; border-top: 1px solid var(--line); padding-top: 18px; }
+.note { color: var(--ink2); font-size: 14.5px; max-width: 80ch; margin: 0 0 14px; }
+.frame { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 22px; position: relative; overflow: hidden; }
+.app { display: grid; grid-template-columns: 220px 1fr; min-height: 420px; padding: 0; }
+.side { background: var(--sunk); padding: 18px 14px; border-right: 1px solid var(--line); font-size: 14.5px; }
+.side .brand { display: flex; gap: 10px; align-items: center; font: 500 21px 'Newsreader'; margin-bottom: 12px; }
+.mark { width: 28px; height: 28px; border-radius: 6px; background: var(--ink); color: #fff; display: grid; place-items: center; font: 500 18px 'Newsreader'; }
+.side .lbl { color: var(--ink2); font-size: 13px; margin: 14px 0 4px; }
+.side .item { padding: 5px 6px; border-radius: 6px; }
+.side .item:hover { background: var(--paper); }
+.badge { display: inline-block; background: var(--ink); color: #fff; border-radius: 999px; font-size: 12px; padding: 1px 8px; margin-left: 6px; }
+.content { padding: 22px 26px; position: relative; }
+.q { font: 500 28px/1.2 'Newsreader', Georgia, serif; margin: 0 0 4px; }
+.meta { font-size: 13.5px; color: var(--ink2); margin-bottom: 12px; }
+.meta .ok { color: var(--ok); font-weight: 500; }
+.tldr { background: var(--sunk); border-radius: 8px; padding: 12px 16px; }
+.prose { font: 18px/1.6 'Newsreader', Georgia, serif; max-width: 66ch; }
+.prose h4 { font: 600 16px 'IBM Plex Sans'; margin: 14px 0 4px; }
+.cite { font: 600 12px 'IBM Plex Sans'; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 5px; vertical-align: 2px; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
+.pill { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 13px; font-size: 14px; min-height: 36px; display: inline-flex; align-items: center; }
+.pill.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+.pill.lead { border: none; background: none; color: var(--ink2); padding-left: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding-top: 10px; border-top: 1px solid var(--line); }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 0 12px; height: 38px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; white-space: nowrap; }
+.btn.pri { background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.btn.ghost { border-color: transparent; background: none; }
+.btn:focus-visible, .pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.thumbs { margin-left: auto; display: flex; gap: 2px; }
+.panel { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 16px 18px; margin-top: 12px; }
+.panel-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.panel-h b { font-size: 15px; }
+.tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); margin-bottom: 14px; font-size: 14.5px; }
+.tabs span { padding: 6px 0; color: var(--ink2); }
+.tabs .on { color: var(--ink); border-bottom: 2px solid var(--ink); font-weight: 500; }
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 26px 22px; text-align: center; background: var(--paper); min-height: 150px; display: grid; place-items: center; }
+.card .front { font: 500 22px/1.35 'Newsreader', Georgia, serif; max-width: 46ch; }
+.card .back { font-size: 15.5px; color: var(--ink); margin-top: 10px; max-width: 60ch; }
+.diff { font-size: 12px; color: var(--ink2); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.nav { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.nav .count { margin: 0 auto; color: var(--ink2); font-size: 14px; }
+.opt { display: flex; gap: 10px; align-items: center; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; background: var(--surface); font-size: 15px; }
+.opt .r { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink2); flex: none; }
+.opt.pick .r { border: 5px solid var(--ink); }
+.verdict { border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-size: 15px; }
+.verdict.bad { background: var(--bad-soft); color: var(--bad); }
+.verdict.good { background: var(--ok-soft); color: var(--ok); }
+.verdict p { color: var(--ink); margin: 4px 0 0; }
+.toast { position: absolute; right: 18px; bottom: 18px; background: var(--ink); color: #fff; border-radius: 8px; padding: 10px 14px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+.grades .btn { justify-content: center; flex-direction: column; height: 56px; gap: 0; }
+.grades small { color: var(--ink2); font-size: 12px; }
+.drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 330px; background: var(--surface); border-left: 1px solid var(--line);
+          box-shadow: -12px 0 30px rgba(0,0,0,.08); padding: 16px; overflow: auto; font-size: 14px; }
+.drawer .h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: 600; }
+.src { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.src.target { border-color: var(--accent); background: var(--accent-soft); }
+.src .t { font-weight: 600; line-height: 1.35; margin: 3px 0; }
+.src .m { color: var(--ink2); font-size: 13px; }
+.src .qt { font: italic 14px 'Newsreader', Georgia, serif; color: var(--ink2); }
+.src a { color: var(--accent); font-size: 13px; }
+.tag { display: inline-block; font-size: 12px; background: var(--sunk); border-radius: 4px; padding: 0 6px; color: var(--ink2); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.gcard { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-height: 96px; }
+.gcard b { display: block; font-weight: 500; line-height: 1.4; }
+.gcard span { color: var(--ink2); font-size: 14px; }
+.map { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px; overflow-x: auto; }
+.share-url { font-family: ui-monospace, monospace; background: var(--sunk); border-radius: 6px; padding: 8px 10px; font-size: 13.5px; word-break: break-all; }
+.banner { background: var(--sunk); border-radius: 8px; padding: 10px 14px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.drop { border: 1.5px dashed var(--line); border-radius: 10px; padding: 22px; text-align: center; color: var(--ink2); background: var(--surface); }
+.file { display: flex; justify-content: space-between; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-top: 8px; font-size: 14px; background: var(--surface); }
+.err { color: var(--bad); font-size: 14px; margin-top: 6px; }
+.composer { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 14px; color: var(--ink2); display: flex; justify-content: space-between; align-items: center; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); }
+.sw { width: 34px; height: 20px; border-radius: 999px; background: var(--ink); position: relative; }
+.sw::after { content: ''; position: absolute; right: 3px; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th { text-align: left; color: var(--ink2); font-weight: 600; }
+th, td { border-bottom: 1px solid var(--line); padding: 8px 10px 8px 0; vertical-align: top; }
+.player { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.player select, .player input { font: inherit; font-size: 14px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.phone { width: 390px; max-width: 100%; border: 1px solid var(--line); border-radius: 22px; padding: 18px 14px; background: var(--paper); margin: 0 auto; }
+.phone .q { font-size: 23px; }
+.phone .prose { font-size: 16.5px; }
+.legend { font-size: 13.5px; color: var(--ink2); margin-top: 6px; }
+@media (max-width: 860px) { .app { grid-template-columns: 1fr; } .side { display: none; } .two { grid-template-columns: 1fr; } .drawer { position: static; width: auto; box-shadow: none; border: 1px solid var(--line); border-radius: 8px; margin-top: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Paper Scout — feature mockups</h1>
+<p class="note">Static mockups for the three-phase feature plan (PLAN.md). The theme tokens, fonts and answer-first layout come from the live app.
+No counts, index dates, category codes, model names, costs or research steps appear anywhere (rule R2). Sources open only in the side panel (R3).</p>
+
+<!-- 1 -->
+<h2 class="mock">1 · Answer with follow-ups, action row and the sources side panel (F1, F3, shared row)</h2>
+<p class="note">Sources are closed by default. <b>Sources · 5</b> or any <span class="cite">2</span> chip slides the panel in and highlights the card. Only one feature panel per answer is open at a time; the active button is outlined.</p>
+<div class="frame app">
+  <aside class="side">
+    <div class="brand"><span class="mark">P</span>Paper Scout</div>
+    <div class="btn pri" style="width:100%;justify-content:center">New question</div>
+    <div class="lbl">Review</div><div class="item">Review<span class="badge">7 due</span></div>
+    <div class="lbl">Recent</div>
+    <div class="item">How is RAG evaluated?</div><div class="item">Efficient fine-tuning compared</div>
+    <div class="item" style="color:var(--ink2);font-size:13px">Clear history</div>
+    <div class="lbl">Collections</div><div class="item">Thesis reading (4)</div><div class="item">Agents (2)</div>
+  </aside>
+  <section class="content" style="padding-right:360px">
+    <div class="q">How is retrieval-augmented generation evaluated?</div>
+    <div class="meta"><span class="ok">Checked against sources</span></div>
+    <div class="tldr"><b>Short answer.</b> Evaluations split into retrieval quality and answer faithfulness <span class="cite">1</span><span class="cite">3</span>; recent work adds LLM judges calibrated against people <span class="cite">2</span>.</div>
+    <div class="prose"><h4>Retrieval metrics</h4><p>Recall@k and nDCG remain the default for the retriever <span class="cite">1</span>, but …</p></div>
+    <div class="pills"><span class="pill lead">Ask next</span><span class="pill">How reliable are LLM judges for faithfulness?</span><span class="pill">Which benchmarks test multi-hop retrieval?</span><span class="pill">How is context relevance scored?</span></div>
+    <div class="row">
+      <span class="btn">Sources · 5</span><span class="btn">Explain simply</span><span class="btn">Go deeper</span><span class="btn on">Study this</span><span class="btn">Concept map</span>
+      <span class="btn">Listen</span><span class="btn">Share</span><span class="btn">Save</span><span class="btn">More ▾</span>
+      <span class="thumbs"><span class="btn ghost" aria-label="Helpful">👍</span><span class="btn ghost" aria-label="Not helpful">👎</span></span>
+    </div>
+  </section>
+  <aside class="drawer">
+    <div class="h">Sources <span class="btn ghost" style="height:30px">Close ✕</span></div>
+    <div class="src"><div class="m"><b style="color:var(--accent)">1</b> Chen, Li et al. · 2026</div><div class="t">A Survey of Evaluation for Retrieval-Augmented Generation</div><div class="qt">“We group metrics by the component they test …”</div><a>Open paper ↗</a></div>
+    <div class="src target"><div class="m"><b style="color:var(--accent)">2</b> Rao et al. · 2026</div><div class="t">Calibrating LLM Judges for Faithfulness</div><div class="qt">“Judge scores correlate with annotators at 0.81 …”</div><a>Open paper ↗</a></div>
+    <div class="src"><div class="m"><b style="color:var(--accent)">3</b> <span class="tag">Your upload</span> · p. 4</div><div class="t">my-draft.pdf</div><div class="qt">“We measure answer faithfulness with …”</div></div>
+  </aside>
+</div>
+<div class="two" style="margin-top:14px">
+  <div class="panel"><div class="panel-h"><b>More</b></div>
+    <div class="row" style="border:none;padding:0"><span class="btn">Copy answer</span><span class="btn">Download Markdown</span><span class="btn">Download BibTeX</span><span class="btn">Write a review</span></div>
+    <p class="legend">Clipboard blocked? The answer appears in a code box with its own copy button.</p></div>
+  <div class="panel"><div class="panel-h"><b>Feedback (F15) after 👎</b></div>
+    <div class="pills" style="margin:0 0 8px"><span class="pill">Wrong</span><span class="pill on">Missing source</span><span class="pill">Too vague</span><span class="pill">Off-topic</span><span class="pill">Other</span></div>
+    <div class="composer" style="padding:8px 12px">Anything else? (optional)</div>
+    <div class="row" style="border:none;padding-top:8px"><span class="btn pri">Send feedback</span></div></div>
+</div>
+
+<!-- 2 -->
+<h2 class="mock">2 · Empty state with featured answers (F5)</h2>
+<div class="frame">
+  <div class="q" style="font-size:32px">Ask the research a question.</div>
+  <p class="note" style="margin-top:6px">Answers come from recent AI and machine-learning papers. Every claim links to its source.</p>
+  <div class="gallery">
+    <div class="gcard"><b>How is retrieval-augmented generation evaluated?</b><span>Retrieval metrics, faithfulness checks and LLM judges.</span></div>
+    <div class="gcard"><b>Compare approaches to efficient fine-tuning</b><span>LoRA, adapters and prompt tuning side by side.</span></div>
+    <div class="gcard"><b>What reduces hallucinations in LLMs?</b><span>Grounding, decoding tricks and self-checking.</span></div>
+    <div class="gcard"><b>Which benchmarks evaluate LLM agents?</b><span>Web, coding and tool-use suites.</span></div>
+  </div>
+  <p class="legend">Clicking a card renders its stored answer instantly — no model call.</p>
+</div>
+
+<!-- 3 -->
+<h2 class="mock">3 · Simpler / deeper version (F2)</h2>
+<div class="frame">
+  <div class="meta">Simpler version · of <a style="color:var(--accent)">How is retrieval-augmented generation evaluated?</a></div>
+  <div class="q" style="font-size:24px">Simpler version</div>
+  <div class="prose"><p>Think of RAG like an open-book exam. Graders check two things: did the student open the right pages <span class="cite">1</span>, and did the answer stick to what those pages say <span class="cite">2</span>?</p></div>
+  <p class="legend">Same sources and numbering as the original; no new search.</p>
+</div>
+
+<!-- 4 -->
+<h2 class="mock">4 · Study this — flashcards and quiz (F6)</h2>
+<div class="two">
+  <div class="panel"><div class="panel-h"><b>Study this</b><span class="btn ghost" style="height:30px">Close</span></div>
+    <div class="tabs"><span class="on">Flashcards</span><span>Quiz</span></div>
+    <div class="card"><div><span class="diff">medium</span><div class="front">What does a faithfulness metric measure?</div>
+      <div class="back">Whether each claim in the answer is supported by the retrieved passages. <span class="cite">2</span></div></div></div>
+    <div class="nav"><span class="btn">← Prev</span><span class="btn">Hide answer</span><span class="count">3 / 10</span><span class="btn">Next →</span></div>
+    <div class="row" style="margin-top:12px"><span class="btn">Add all to review</span><span class="btn">Harder set</span><span class="btn">Download Anki deck</span><span class="btn">Download CSV</span></div>
+  </div>
+  <div class="panel" style="position:relative"><div class="panel-h"><b>Study this</b><span class="legend" style="margin:0">Question 2 of 5</span></div>
+    <div class="tabs"><span>Flashcards</span><span class="on">Quiz</span></div>
+    <b style="font-weight:500">Which metric targets the retriever rather than the generator?</b>
+    <div class="opt"><span class="r"></span>Faithfulness</div>
+    <div class="opt pick"><span class="r"></span>Answer relevance</div>
+    <div class="opt"><span class="r"></span>Recall@k</div>
+    <div class="opt"><span class="r"></span>BLEU</div>
+    <div class="verdict bad"><b>✕ Not quite — the answer is “Recall@k”.</b><p>Recall@k scores whether the right passages were retrieved at all. <span class="cite">1</span></p></div>
+    <div class="nav"><span class="count">Score so far 1 / 2</span><span class="btn pri">Next question</span></div>
+    <div class="toast">Added to your review deck</div>
+  </div>
+</div>
+
+<!-- 5 -->
+<h2 class="mock">5 · Spaced review (F7) and backup</h2>
+<div class="two">
+  <div class="frame"><div class="q" style="font-size:24px">Review</div>
+    <div class="meta">7 due today · 4-day review streak</div>
+    <div class="pills" style="margin-top:0"><span class="pill on">All topics</span><span class="pill">How is RAG evaluated?</span><span class="pill">Efficient fine-tuning</span></div>
+    <div class="card"><div><div class="front">Why can an LLM judge overrate fluent answers?</div><div class="back">It rewards style; calibration against human labels reduces the bias. <span class="cite">2</span> <span class="legend">Rao et al., 2026</span></div></div></div>
+    <div class="grades"><span class="btn">Again<small>&lt;10 min</small></span><span class="btn">Hard<small>1 day</small></span><span class="btn">Good<small>3 days</small></span><span class="btn">Easy<small>8 days</small></span></div>
+    <p class="legend">After grading: “Next review 28 Oct 2026”. Daily cap 20 — the rest roll over to tomorrow.</p>
+  </div>
+  <div class="frame"><div class="q" style="font-size:24px">Your deck</div>
+    <p class="note">Your deck and collections live in this browser. Download a backup to move them.</p>
+    <div class="row" style="border:none"><span class="btn">Download backup (.json)</span><span class="btn">Download Anki deck</span><span class="btn">Download CSV</span></div>
+    <div class="drop" style="margin-top:12px">Import a backup — drag a .json file here or <u>browse</u></div>
+  </div>
+</div>
+
+<!-- 6 -->
+<h2 class="mock">6 · Concept map (F9)</h2>
+<div class="panel">
+  <div class="panel-h"><b>Concept map</b><span class="btn ghost" style="height:30px">Close</span></div>
+  <div class="map">
+    <svg viewBox="0 0 760 170" width="100%" role="img" aria-label="Concept map">
+      <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8z" fill="#5b574f"/></marker></defs>
+      <g font-family="IBM Plex Sans" font-size="13" fill="#1f1d1a">
+        <rect x="10" y="64" width="120" height="36" rx="8" fill="#fff" stroke="#1f1d1a"/><text x="70" y="87" text-anchor="middle">RAG evaluation</text>
+        <rect x="200" y="14" width="130" height="36" rx="8" fill="#fff" stroke="#1f1d1a"/><text x="265" y="37" text-anchor="middle">Retrieval quality</text>
+        <rect x="200" y="114" width="130" height="36" rx="8" fill="#fff" stroke="#1f1d1a"/><text x="265" y="137" text-anchor="middle">Faithfulness</text>
+        <rect x="410" y="14" width="100" height="36" rx="8" fill="#fff" stroke="#1f1d1a"/><text x="460" y="37" text-anchor="middle">Recall@k</text>
+        <rect x="410" y="114" width="100" height="36" rx="8" fill="#fff" stroke="#1f1d1a"/><text x="460" y="137" text-anchor="middle">LLM judges</text>
+        <rect x="590" y="114" width="150" height="36" rx="8" fill="#fff" stroke="#5b574f" stroke-dasharray="5 4"/><text x="665" y="137" text-anchor="middle" fill="#5b574f">Human calibration</text>
+      </g>
+      <g stroke="#5b574f" fill="none" marker-end="url(#a)"><path d="M130,76 L198,36"/><path d="M130,90 L198,130"/><path d="M330,32 L408,32"/><path d="M330,132 L408,132"/><path d="M510,132 L588,132"/></g>
+      <g font-family="IBM Plex Sans" font-size="11" fill="#5b574f"><text x="140" y="48">measures</text><text x="140" y="124">measures</text><text x="345" y="26">scored by</text><text x="345" y="126">scored by</text><text x="520" y="126">needs</text></g>
+    </svg>
+  </div>
+  <p class="legend">Dashed = not directly supported by a source.</p>
+  <div class="pills"><span class="pill lead">Explore</span><span class="pill">Retrieval quality</span><span class="pill">Faithfulness</span><span class="pill">LLM judges</span><span class="pill">Human calibration</span></div>
+  <div class="row" style="border:none;padding-top:0"><span class="btn">Download map (.svg)</span><span class="btn">Copy Mermaid</span></div>
+</div>
+
+<!-- 7 -->
+<h2 class="mock">7 · Share (F10) — creator panel and the read-only page</h2>
+<div class="two">
+  <div class="panel" style="position:relative"><div class="panel-h"><b>Share this answer</b></div>
+    <label class="toggle"><input type="checkbox" checked> Include the study set</label>
+    <div class="row" style="border:none"><span class="btn pri">Create share link</span></div>
+    <div class="share-url">https://paprly.streamlit.app/?a=k3Xp9QwZ</div>
+    <p class="legend">Anyone with the link sees this question, answer and its sources — never your history.</p>
+    <div class="toast">Link copied</div>
+  </div>
+  <div class="frame">
+    <div class="banner"><span>Shared answer · read-only</span><span class="btn pri">Ask your own question</span></div>
+    <div class="q" style="font-size:24px">How is retrieval-augmented generation evaluated?</div>
+    <div class="tldr"><b>Short answer.</b> Evaluations split into retrieval quality and faithfulness <span class="cite">1</span>…</div>
+    <div class="row" style="margin-top:12px"><span class="btn">Sources · 5</span><span class="btn">Study this</span><span class="btn">Save to my review deck</span></div>
+    <p class="legend" style="margin-top:12px">Missing id → “This shared answer isn't available.” + Ask your own question.</p>
+  </div>
+</div>
+
+<!-- 8 -->
+<h2 class="mock">8 · Upload your own paper (F11)</h2>
+<div class="frame">
+  <div class="drop">Add up to 3 PDFs (20 MB, about 60 pages each) — drag here or <u>browse</u></div>
+  <div class="file"><span>my-draft.pdf · 18 pages</span><span style="color:var(--ok)">Ready</span></div>
+  <div class="file"><span>scan.pdf</span><span style="color:var(--bad)">Not added</span></div>
+  <div class="err">This PDF has no selectable text. Try a version exported from the original document, not a scan.</div>
+  <div class="composer" style="margin-top:12px"><span>…or paste a link to a PDF</span><span class="btn" style="height:32px">Add link</span></div>
+  <div class="composer" style="margin-top:12px"><span>Ask about a method, benchmark or trend…</span><span class="toggle">Include my papers <span class="sw"></span></span></div>
+  <p class="legend">Uploads stay in this session only and are removed on “New question”.</p>
+</div>
+
+<!-- 9 -->
+<h2 class="mock">9 · Write a review (F12) and Listen (F13)</h2>
+<div class="two">
+  <div class="panel"><div class="panel-h"><b>Literature review</b><span class="btn ghost" style="height:30px">Close</span></div>
+    <h4 style="margin:4px 0">Overview</h4><p class="prose" style="font-size:16px;margin:0">RAG evaluation has moved from retrieval-only metrics to end-to-end faithfulness <span class="cite">1</span><span class="cite">2</span>.</p>
+    <h4 style="margin:10px 0 4px">Methods compared</h4>
+    <table><tr><th>Method</th><th>Measures</th><th>Strength</th><th>Sources</th></tr>
+      <tr><td>Recall@k</td><td>Retriever</td><td>Cheap, stable</td><td><span class="cite">1</span></td></tr>
+      <tr><td>LLM judge</td><td>Faithfulness</td><td>Scales</td><td><span class="cite">2</span></td></tr></table>
+    <p class="legend">Also: themes, timeline of key ideas, open problems, references (cited papers only).</p>
+    <div class="row" style="border:none"><span class="btn">Download review (.md)</span><span class="btn">Download review (.docx)</span></div>
+  </div>
+  <div class="panel"><div class="panel-h"><b>Listen</b><span class="btn ghost" style="height:30px">Close</span></div>
+    <div class="player"><span class="btn pri">▶ Play</span><span class="btn">Pause</span><span class="btn">Stop</span>
+      <label>Speed <input type="range" min="0.8" max="1.5" step="0.1" value="1"> 1.0×</label>
+      <label>Voice <select><option>Samantha (en-US)</option></select></label></div>
+    <p class="legend">Reads the short answer first, then the rest. Citations and formatting are skipped. Hidden when the browser has no speech support.</p>
+  </div>
+</div>
+
+<!-- 10 -->
+<h2 class="mock">10 · Save and Collections (F14)</h2>
+<div class="two">
+  <div class="panel"><div class="panel-h"><b>Save to a collection</b></div>
+    <div class="pills" style="margin-top:0"><span class="pill on">Thesis reading</span><span class="pill">Agents</span></div>
+    <div class="composer" style="padding:8px 12px">New collection name (max 40 characters)</div>
+    <div class="row" style="border:none;padding-top:8px"><span class="btn pri">Save answer</span></div>
+  </div>
+  <div class="frame"><div class="q" style="font-size:24px">Thesis reading</div>
+    <div class="meta">4 saved answers</div>
+    <div class="src"><div class="t">How is retrieval-augmented generation evaluated?</div><div class="m">Saved 25 Oct 2026 · <a>Open</a> · <a>Remove</a></div></div>
+    <div class="src"><div class="t">Compare approaches to efficient fine-tuning</div><div class="m">Saved 24 Oct 2026 · <a>Open</a> · <a>Remove</a></div></div>
+    <div class="row" style="border:none"><span class="btn">Rename</span><span class="btn">Download collection (.md)</span><span class="btn">Download BibTeX</span><span class="btn">Delete collection</span></div>
+  </div>
+</div>
+
+<!-- 11 -->
+<h2 class="mock">11 · Phone, 390 px</h2>
+<div class="phone">
+  <div class="q">How is RAG evaluated?</div>
+  <div class="tldr" style="font-size:15px"><b>Short answer.</b> Retrieval quality and faithfulness <span class="cite">1</span><span class="cite">3</span>.</div>
+  <div class="pills"><span class="pill">How reliable are LLM judges?</span><span class="pill">Multi-hop benchmarks?</span></div>
+  <div class="row"><span class="btn">Sources · 5</span><span class="btn">Explain simply</span><span class="btn">Study this</span><span class="btn">More ▾</span><span class="thumbs"><span class="btn ghost">👍</span><span class="btn ghost">👎</span></span></div>
+  <p class="legend">Go deeper, Concept map, Listen, Share and Save move into More. The sources panel becomes a full-width sheet.</p>
+</div>
+</main>
+</body>
+</html>
