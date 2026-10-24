@@ -33,4 +33,6 @@ the repository's `uv.lock` because it sits next to the entry file.
 - Memory: search ~260 MB; full-text answers peak ~400 MB (PDF chunks are embedded 4 at a time).
 - Prometheus/Grafana monitoring is for the local FastAPI app; on the cloud build use LangSmith traces
   and the 👍/👎 feedback recorded there.
-- Run it locally: `uv run --with streamlit streamlit run deploy/streamlit_app.py`.
+- Run it locally: `uv run --with "streamlit>=1.50" streamlit run deploy/streamlit_app.py`.
+- Look and feel: chat layout with a live research-progress panel; fonts, colours and light/dark
+  palettes live in `.streamlit/config.toml` (requires Streamlit 1.50+, pinned in `deploy/requirements.txt`).

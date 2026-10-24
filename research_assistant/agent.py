@@ -77,14 +77,18 @@ class AdaptiveResearchAgent:
     @traceable(
         name="research_agent",
         run_type="chain",
+        process_inputs=lambda inputs: {"question": inputs.get("question")},
         process_outputs=lambda outputs: {
             key: outputs.get(key)
             for key in ("answer", "answer_stage", "trajectory", "usage")
         },
     )
-    def run(self, question):
+    def run(self, question, on_progress=None):
+        """Answer a question. `on_progress(event, data)` receives step updates for live UIs."""
+        self._on_progress = on_progress
         self.last_full_text_context = ""
         papers = self.hybrid.search(question, k=settings.result_count)
+        self._emit("searched", papers=len(papers))
         trajectory = [
             {
                 "name": "search_papers",
@@ -106,6 +110,11 @@ class AdaptiveResearchAgent:
         )
         self._record_usage(usages, costs, "query_and_evidence_router", usage)
         trajectory.append({"name": "evaluate_abstract_sufficiency", "result": route})
+        self._emit(
+            "routed",
+            needs_full_text=route.get("needs_full_text") is True,
+            reason=str(route.get("reason") or ""),
+        )
 
         answer = None
         stage = "abstract"
@@ -118,6 +127,7 @@ class AdaptiveResearchAgent:
         if answer is None:
             answer, usage = self._abstract_answer(question, papers)
             self._record_usage(usages, costs, "abstract_answer", usage)
+            self._emit("drafted", stage="abstract")
             check, usage = self._json_call(
                 ANSWER_CHECK_PROMPT,
                 f"Question:\n{question}\n\nAbstracts:\n{abstract_context}\n\nAnswer:\n{answer}",
@@ -125,6 +135,7 @@ class AdaptiveResearchAgent:
             )
             self._record_usage(usages, costs, "abstract_answer_check", usage)
             trajectory.append({"name": "evaluate_answer", "result": check})
+            self._emit("checked", stage="abstract", status=str(check.get("status") or ""))
             if check.get("status") == "needs_full_text":
                 selected_ids = self._selected_ids(check, papers)
                 answer, stage = self._full_text_answer(
@@ -191,6 +202,7 @@ class AdaptiveResearchAgent:
             missing_items = [str(missing_items)]
         missing = " ".join(str(item) for item in missing_items)
         chunk_query = f"{question}\nRequired details: {missing}".strip()
+        self._emit("fetching_full_text", papers=len(selected))
         try:
             chunks, context, downloaded_ids = self.paper_tools.retrieve(
                 chunk_query, selected
@@ -205,6 +217,7 @@ class AdaptiveResearchAgent:
                     "error": str(error),
                 }
             )
+            self._emit("full_text_failed")
             if fallback_answer is not None:
                 return (
                     fallback_answer
@@ -237,6 +250,12 @@ class AdaptiveResearchAgent:
                 "context_tokens": context_tokens,
             }
         )
+        self._emit(
+            "full_text_ready",
+            chunks=len(chunks),
+            tokens=context_tokens,
+            downloaded=len(downloaded_ids),
+        )
 
         with span("answer_from_full_text"):
             answer, usage = self._text_call(
@@ -245,6 +264,7 @@ class AdaptiveResearchAgent:
                 max_output_tokens=settings.max_full_text_answer_tokens,
             )
         self._record_usage(usages, costs, "full_text_answer", usage)
+        self._emit("drafted", stage="full_text")
         final_check, usage = self._json_call(
             FINAL_CHECK_PROMPT,
             f"Question:\n{question}\n\nEvidence:\n{context}\n\nAnswer:\n{answer}",
@@ -252,6 +272,7 @@ class AdaptiveResearchAgent:
         )
         self._record_usage(usages, costs, "final_answer_check", usage)
         trajectory.append({"name": "evaluate_final_answer", "result": final_check})
+        self._emit("checked", stage="full_text", status=str(final_check.get("status") or ""))
         if final_check.get("status") != "pass":
             answer += "\n\nThe available full-text excerpts may not completely resolve every requested detail."
         return answer, "full_text"
@@ -303,6 +324,16 @@ class AdaptiveResearchAgent:
             if isinstance(paper_id, str) and paper_id in valid
         ]
         return selected[:MAX_PAPERS]
+
+    def _emit(self, event, **data):
+        """Report progress to the optional UI callback; a UI error must never break an answer."""
+        callback = getattr(self, "_on_progress", None)
+        if callback is None:
+            return
+        try:
+            callback(event, data)
+        except Exception:
+            pass
 
     @staticmethod
     def _record_usage(usages, costs, stage, usage):

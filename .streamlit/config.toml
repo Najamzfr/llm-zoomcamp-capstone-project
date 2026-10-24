@@ -1,5 +1,37 @@
-[theme]
-primaryColor = "#4f46e5"
+# Theme for the Streamlit Cloud app (deploy/streamlit_app.py). Light/dark follow the visitor's system.
+
+[client]
+toolbarMode = "minimal"  # hide the developer menu and Deploy button for visitors
 
 [browser]
 gatherUsageStats = false
+
+[theme]
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+baseRadius = "medium"
+buttonRadius = "medium"
+showWidgetBorder = true
+showSidebarBorder = true
+
+[theme.light]
+primaryColor = "#4f46e5"
+backgroundColor = "#f7f8fc"
+secondaryBackgroundColor = "#eef0f7"
+textColor = "#161a26"
+borderColor = "#e3e6ef"
+linkColor = "#4f46e5"
+
+[theme.light.sidebar]
+backgroundColor = "#ffffff"
+
+[theme.dark]
+primaryColor = "#8b85ff"
+backgroundColor = "#0e1118"
+secondaryBackgroundColor = "#1a1f2b"
+textColor = "#e8eaf2"
+borderColor = "#2a3040"
+linkColor = "#a29dff"
+
+[theme.dark.sidebar]
+backgroundColor = "#131722"
