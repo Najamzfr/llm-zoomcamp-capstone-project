@@ -96,3 +96,55 @@ outcomes, and user feedback).
 
 A free public build runs on Streamlit Community Cloud from `deploy/streamlit_app.py`; see
 [deploy/README.md](deploy/README.md).
+
+## Paper Scout features (Streamlit app)
+
+Everything is free for visitors and works without an account. Personal data (history, review deck,
+collections) stays in the visitor's browser (localStorage); shares and feedback go to `SHARE_BACKEND`.
+
+| Feature | Where |
+|---|---|
+| Follow-up suggestions (from the same answer call) | pills under each answer |
+| Explain simply / Go deeper (same sources, citations kept) | action row |
+| Copy, Markdown with references, BibTeX (stable keys, de-duplicated) | More |
+| Question history (last 50, reopens instantly, inline "Clear history") | sidebar → Recent |
+| Featured answers gallery (zero model calls) | empty state |
+| Study this: flashcards + quiz; wrong answers go to review; harder set | action row |
+| Spaced review (FSRS), daily cap, topics, streak, JSON backup/import | sidebar → Review |
+| Anki `.apkg` and CSV export | Study this / Review |
+| Concept map (Graphviz) with explore pills, SVG + Mermaid export | action row |
+| Share links (`?a=<id>`), read-only page, optional study set | action row |
+| Upload your own PDFs (session only) + "Include my papers" | next to the composer |
+| Literature review report (.md and .docx) | More → Write a review |
+| Listen (browser speech, speed and voice) | action row |
+| Collections with export (.md + .bib) | Save, sidebar → Collections |
+| Feedback with reasons | 👍 / 👎 |
+
+Feature code lives in `app/features/` (one module per feature) and `app/storage/local.py`; the plan and
+mockups are in [PLAN.md](PLAN.md) and [docs/mockups/features.html](docs/mockups/features.html).
+
+### Environment variables for the extra features
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `EXTRAS_LLM_PROVIDER` | `openai` | `openai`, `gemini` or `groq` for follow-up fallback, rewrites, study sets, concept maps, reviews |
+| `EXTRAS_LLM_MODEL` | per provider | `gpt-4o-mini`, `gemini-2.5-flash`, `llama-3.3-70b-versatile` |
+| `GEMINI_API_KEY`, `GROQ_API_KEY` | – | keys for the free-tier providers |
+| `SHARE_BACKEND` | `memory` | `supabase` (persistent) or `memory` (this server process only) |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY` | – | Supabase project (tables and RLS policies in [PLAN.md](PLAN.md)) |
+| `APP_URL` | page URL | base URL of share links, e.g. `https://paprly.streamlit.app` |
+| `REVIEW_DAILY_CAP` | `20` | spaced-review cards per day |
+
+See `.streamlit/secrets.toml.example` for a ready-to-paste secrets block.
+
+### Rebuilding the featured answers
+
+```powershell
+uv run python scripts/build_featured.py   # calls the real pipeline; writes data/featured.json
+```
+
+### Tests
+
+```powershell
+uv run python -m pytest -q   # unit tests + streamlit.testing AppTest smoke tests (no network)
+```

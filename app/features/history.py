@@ -2,6 +2,8 @@
 
 from app.storage import local
 
+from .records import without_upload_text
+
 LIMIT = 50
 
 
@@ -11,7 +13,8 @@ def items():
 
 def add(record):
     """Store an answer record; asking the same question again replaces the older entry."""
-    entry = {key: record.get(key) for key in ("id", "question", "answer_md", "followups", "sources", "created_at", "verified")}
+    entry = {key: record.get(key) for key in ("id", "question", "answer_md", "followups", "created_at", "verified")}
+    entry["sources"] = without_upload_text(record.get("sources", []))
     kept = [item for item in items() if item.get("question", "").strip().lower() != record["question"].strip().lower()]
     local.put(local.HISTORY, (kept + [entry])[-LIMIT:])
 

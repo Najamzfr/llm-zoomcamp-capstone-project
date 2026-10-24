@@ -16,7 +16,7 @@ import re
 import requests
 import streamlit as st
 
-from .records import new_id, now_iso
+from .records import new_id, now_iso, without_upload_text
 
 MAX_ANSWER_BYTES = 10 * 1024
 MAX_SHARES_PER_SESSION = 20
@@ -109,7 +109,7 @@ def snapshot(record, study=None):
         "question": _clean(record.get("question")),
         "answer_md": answer,
         "sources": [{key: _clean(source.get(key)) if isinstance(source.get(key), str) else source.get(key)
-                     for key in SOURCE_FIELDS} for source in record.get("sources", [])],
+                     for key in SOURCE_FIELDS} for source in without_upload_text(record.get("sources", []))],
         "created_at": now_iso(),
     }
     cleaned_study = sanitize_study(study)

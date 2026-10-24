@@ -62,6 +62,18 @@ limitation. Do not invent results or details.
 )
 
 
+def fuse_rankings(primary, extra, k, constant=60):
+    """Reciprocal Rank Fusion of two result lists; ranks are renumbered 1..k for citations."""
+    scores, items = {}, {}
+    for ranking in (primary, extra):
+        for rank, paper in enumerate(ranking, start=1):
+            paper_id = paper["paper_id"]
+            scores[paper_id] = scores.get(paper_id, 0.0) + 1.0 / (constant + rank)
+            items.setdefault(paper_id, paper)
+    ordered = sorted(scores, key=scores.get, reverse=True)[:k]
+    return [dict(items[paper_id], rank=rank, score=scores[paper_id]) for rank, paper_id in enumerate(ordered, start=1)]
+
+
 class AdaptiveResearchAgent:
     def __init__(
         self,
@@ -88,11 +100,13 @@ class AdaptiveResearchAgent:
             for key in ("answer", "answer_stage", "trajectory", "usage")
         },
     )
-    def run(self, question, on_progress=None, filters=None):
+    def run(self, question, on_progress=None, filters=None, extra_search=None):
         """Answer a question.
 
         `on_progress(event, data)` receives step updates for live UIs; `filters` (optional)
         narrows the search, e.g. {"categories": ["cs.CL"], "since": "2026-03-01"}.
+        `extra_search(query, k)` (optional) returns more paper-like results, such as a visitor's
+        uploaded PDFs (marked `upload: True`); they are fused with the search results via RRF.
         """
         self._on_progress = on_progress
         self.last_full_text_context = ""
@@ -101,6 +115,9 @@ class AdaptiveResearchAgent:
             papers = self.hybrid.search(question, k=settings.result_count, filters=filters)
         else:
             papers = self.hybrid.search(question, k=settings.result_count)
+        if extra_search is not None:
+            extra = extra_search(question, 3) or []
+            papers = fuse_rankings(papers, extra, settings.result_count + min(2, len(extra)))
         self._emit(
             "searched",
             papers=len(papers),
@@ -212,9 +229,12 @@ class AdaptiveResearchAgent:
         costs,
         fallback_answer=None,
     ):
-        selected = [paper for paper in papers if paper["paper_id"] in selected_ids]
+        # Uploaded chunks are already full text; only catalogue papers are downloaded.
+        uploads = [paper for paper in papers if paper.get("upload")]
+        catalogue = [paper for paper in papers if not paper.get("upload")]
+        selected = [paper for paper in catalogue if paper["paper_id"] in selected_ids]
         if not selected:
-            selected = papers[:MAX_PAPERS]
+            selected = catalogue[:MAX_PAPERS]
         missing_items = decision.get("missing_information", [])
         if not isinstance(missing_items, list):
             missing_items = [str(missing_items)]
@@ -226,9 +246,13 @@ class AdaptiveResearchAgent:
             titles=[paper.get("title", "") for paper in selected],
         )
         try:
-            chunks, context, downloaded_ids = self.paper_tools.retrieve(
-                chunk_query, selected
-            )
+            if selected:
+                chunks, context, downloaded_ids = self.paper_tools.retrieve(chunk_query, selected)
+            elif uploads:
+                chunks, context, downloaded_ids = [], "", []
+            else:
+                raise ValueError("No papers to read in full.")
+            context = self._with_uploads(context, uploads)
         except (OSError, RuntimeError, ValueError) as error:
             trajectory.append(
                 {
@@ -302,6 +326,16 @@ class AdaptiveResearchAgent:
             answer += "\n\nThe available full-text excerpts may not completely resolve every requested detail."
         return answer, "full_text"
 
+    def _with_uploads(self, context, uploads):
+        """Append uploaded excerpts (labelled with their source number) while the token budget allows."""
+        for paper in uploads:
+            block = f"[{paper['rank']}] {paper['title']} (your upload; page: {paper.get('page')})\n{paper['text']}"
+            candidate = f"{context}\n\n{block}" if context else block
+            if len(self.encoding.encode(candidate)) > MAX_FULL_TEXT_TOKENS:
+                break
+            context = candidate
+        return context
+
     def _json_call(self, instructions, prompt, step="json_decision"):
         usages = []
         last_error = None
@@ -339,7 +373,7 @@ class AdaptiveResearchAgent:
 
     @staticmethod
     def _selected_ids(decision, papers):
-        valid = {paper["paper_id"] for paper in papers}
+        valid = {paper["paper_id"] for paper in papers if not paper.get("upload")}
         requested = decision.get("selected_paper_ids", [])
         if not isinstance(requested, list):
             return []

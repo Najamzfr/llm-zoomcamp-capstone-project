@@ -21,6 +21,8 @@ INTERNALS = re.compile(r"\b(cs|stat|eess)\.[A-Z]{2}\b|arxiv|\b\d{1,3},\d{3} pape
 def visible_text(app):
     parts = [element.value for element in app.markdown] + [element.label for element in app.button]
     parts += [getattr(element, "body", "") or "" for element in app.get("html")]
+    parts += [element.value for element in app.caption]
+    parts += [getattr(element, "proto", None) and element.proto.label or "" for element in app.get("download_button")]
     # Tags and attributes are dropped: link targets (paper URLs) aren't visible copy.
     return "\n".join(re.sub(r"<[^>]+>", " ", str(part)) for part in parts)
 
@@ -161,6 +163,55 @@ class PanelTests(unittest.TestCase):
         self.assertIn("This shared answer isn't available.", visible_text(app))
         app.button(key="shared_ask").click().run()
         self.assertIn("Ask the research a question.", visible_text(app))
+
+
+class Phase3PanelTests(unittest.TestCase):
+    def test_listen_save_and_collection_view(self):
+        app = start()
+        record_id = open_featured(app)
+        app.button(key=f"listen_{record_id}").click().run()
+        self.assertFalse(app.exception)
+        app.button(key=f"save_{record_id}").click().run()
+        app.text_input(key=f"save_{record_id}_new").input("Thesis reading").run()
+        app.button(key=f"save_{record_id}_go").click().run()
+        self.assertIn("Thesis reading", app.session_state["ps_local"]["ps_collections_v1"])
+        app.button(key="coll_nav_0").click().run()
+        self.assertFalse(app.exception)
+        text = visible_text(app)
+        self.assertIn("1 saved answer", text)
+        self.assertIn("Download collection (.md)", text)
+        app.button(key=f"coll_open_{record_id}").click().run()
+        self.assertIn(FEATURED[0]["question"], visible_text(app))
+
+    def test_review_report_panel(self):
+        from app.features import llm_extras
+        from tests.test_extras_phase3 import REPORT_REPLY
+
+        llm_extras._cached.clear()
+        app = start()
+        record_id = open_featured(app)
+        with mock.patch("app.features.llm_extras._complete", return_value=REPORT_REPLY):
+            app.button(key=f"report_{record_id}__more").click().run()
+        self.assertFalse(app.exception)
+        text = visible_text(app)
+        self.assertIn("Download review (.docx)", text)
+        self.assertIn("Methods compared", text)
+
+    def test_thumbs_down_asks_for_a_reason(self):
+        from app.features import share
+
+        share._memory_backend.clear()
+        app = start()
+        record_id = open_featured(app)
+        with mock.patch.dict(os.environ, {"SHARE_BACKEND": "memory"}):
+            app.session_state[f"feedback_{record_id}"] = 0
+            app.run()
+            app.pills(key=f"feedback_{record_id}_reason").set_value("Too vague").run()
+            app.button(key=f"feedback_{record_id}_send").click().run()
+            self.assertFalse(app.exception)
+            row = share.backend().feedback[-1]
+        self.assertEqual((row["answer_id"], row["rating"], row["reason"]), (record_id, "down", "Too vague"))
+        self.assertNotIn(f"feedback_{record_id}_send", [button.key for button in app.button])
 
 
 if __name__ == "__main__":

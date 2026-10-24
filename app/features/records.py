@@ -79,6 +79,12 @@ def variant_record(parent, kind, answer_md):
     }
 
 
+def without_upload_text(sources):
+    """Sources safe to store or share: uploaded papers keep their label, never their text."""
+    return [{key: value for key, value in source.items() if not (source.get("upload") and key in ("excerpt", "evidence"))}
+            for source in sources]
+
+
 def sources_context(record, with_answer=True):
     """Numbered evidence (plus the answer) for extra-feature prompts — nothing else (R6)."""
     parts = []

@@ -1,5 +1,18 @@
 # Changelog
 
+## Phase 3 — bigger bets
+- Upload your own paper: up to 3 PDFs (20 MB, ~60 pages) or a PDF link, chunked (800/100 tokens),
+  embedded into an in-memory Qdrant collection for the session; "Include my papers" fuses them with
+  search results via RRF and cites them as "Your upload". Cleared on New question; never stored.
+  Clear errors for scanned, oversized or password-protected PDFs; links to private networks are refused.
+- Write a review: structured literature review (overview, themes, methods table, timeline, open
+  problems, cited references only) with .md and .docx downloads.
+- Listen: browser Web Speech player (play/pause/stop, 0.8–1.5×, voice picker); hidden when unsupported.
+- Collections: save answers into named collections; rename, remove, delete, export .md + combined .bib;
+  included in the JSON backup.
+- Feedback with reasons: thumbs-down asks Wrong / Missing source / Too vague / Off-topic / Other plus an
+  optional note; rows go to SHARE_BACKEND without user identifiers.
+
 ## Phase 2 — core study features
 - Study this: 8–10 flashcards and a 5-question quiz per answer (one cached call); options shuffled;
   each card and explanation cites its sources. Harder set (mechanism/comparison questions).

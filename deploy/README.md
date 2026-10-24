@@ -23,10 +23,15 @@ the repository's `uv.lock` because it sits next to the entry file.
    LANGSMITH_API_KEY = "lsv2_..."
    LANGSMITH_PROJECT = "paper-scout-cloud"
    ```
+   For the extra features also add the block from `.streamlit/secrets.toml.example`
+   (`EXTRAS_LLM_*`, `SHARE_BACKEND`, `SUPABASE_*`, `APP_URL`, `REVIEW_DAILY_CAP`).
+   Persistent share links and feedback need a free Supabase project: run the SQL in `PLAN.md`
+   (tables `shares` and `feedback`, RLS, `get_share()`) in its SQL editor first.
 5. Click **Deploy**. The first build takes a few minutes; the app lives at
    `https://<your-app-name>.streamlit.app`.
 
 ## Notes
+- `deploy/packages.txt` installs the Graphviz binary so concept maps can be downloaded as SVG.
 - The public app spends your OpenAI credit, which is why the rate limits above are lower than local defaults.
   Also set a monthly limit in the OpenAI dashboard.
 - Apps sleep after a period without visitors; the first visit wakes them (about a minute).

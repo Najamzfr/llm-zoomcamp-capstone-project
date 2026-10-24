@@ -90,6 +90,17 @@ def tz_minutes():
     return int(st.session_state.get("ps_tz_minutes", 0))
 
 
+def local_date(iso_timestamp):
+    """ISO date (YYYY-MM-DD) of a UTC timestamp in the visitor's time zone."""
+    from datetime import datetime, timedelta
+
+    try:
+        moment = datetime.fromisoformat(str(iso_timestamp))
+    except ValueError:
+        return str(iso_timestamp or "")[:10]
+    return (moment + timedelta(minutes=tz_minutes())).date().isoformat()
+
+
 def pending():
     return bool(_state()["ps_local_pending"])
 

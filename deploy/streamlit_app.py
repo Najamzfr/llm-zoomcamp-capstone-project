@@ -40,13 +40,14 @@ def _load_secrets_into_env():
 _load_secrets_into_env()
 
 from api import AskLimiter  # noqa: E402  (shared rate limiter)
-from app.features import concept_map, export, followups, history, review, share, study  # noqa: E402
+from app.features import (  # noqa: E402
+    collections, concept_map, export, feedback, followups, history, report, review, share, study, tts, uploads,
+)
 from app.features.llm_extras import LLMExtrasError, Rewrite, llm_json  # noqa: E402
 from app.features.records import build_record, byline, new_id, sources_context, variant_record  # noqa: E402
 from app.storage import local  # noqa: E402
 from research_assistant.config import settings  # noqa: E402
 from research_assistant.presentation import link_citations, period_start, shorten, split_short_answer  # noqa: E402
-from research_assistant.tracing import send_feedback  # noqa: E402
 
 FEATURED_PATH = ROOT / "data" / "featured.json"
 SAMPLES = [
@@ -211,6 +212,10 @@ a.cite:hover { background: var(--accent); color: #fff !important; }
 [class*="st-key-shared_banner"] { background: var(--sunk); border-radius: 8px; padding: 8px 8px 8px 14px; align-items: center;
   justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 [class*="st-key-nav_review"] button { justify-content: flex-start; }
+[class*="st-key-coll_nav_"] button { justify-content: flex-start; text-align: left; padding: 6px 8px; }
+[class*="st-key-coll_nav_"] button p { font-size: 14.5px; }
+[class*="st-key-feedback_"][class*="_box"] { max-width: 560px; }
+[class*="st-key-filters"] [data-testid="stPopover"] button { height: 40px; }
 
 @media (max-width: 640px) {
   .q-title { font-size: 25px; }
@@ -219,7 +224,9 @@ a.cite:hover { background: var(--accent); color: #fff !important; }
   /* Phone: secondary actions move into "More" (their copies there end in "_m"). */
   [class*="st-key-actions_"] [class*="st-key-deeper_"]:not([class*="__m"]),
   [class*="st-key-actions_"] [class*="st-key-map_"]:not([class*="__m"]),
-  [class*="st-key-actions_"] [class*="st-key-share_"]:not([class*="__m"]) { display: none !important; }
+  [class*="st-key-actions_"] [class*="st-key-share_"]:not([class*="__m"]),
+  [class*="st-key-actions_"] [class*="st-key-listen_"]:not([class*="__m"]),
+  [class*="st-key-actions_"] [class*="st-key-save_"]:not([class*="__m"]) { display: none !important; }
   .fc-front { font-size: 19px; }
   [class*="st-key-narrow_"] { display: flex; }
 }
@@ -288,6 +295,11 @@ if (!doc.__paperScout) {
     }
   }, true);
   doc.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeAll(); });
+}
+if (!('speechSynthesis' in window) && !doc.getElementById('ps-no-tts')) {
+  const style = doc.createElement('style'); style.id = 'ps-no-tts';
+  style.textContent = '[class*="st-key-listen_"] { display: none !important; }';
+  doc.head.appendChild(style);
 }
 const data = component.data || {};
 if (data.copy && window.__psCopied !== data.run) {
@@ -362,7 +374,8 @@ def ask(question):
     since = period_start(state.get("period_filter") or PERIODS[0], corpus["last"])
     if since:
         filters["since"] = since
-    state["messages"].append({"id": new_id(), "question": question, "status": "queued", "filters": filters})
+    state["messages"].append({"id": new_id(), "question": question, "status": "queued", "filters": filters,
+                              "uploads": bool(state.get("use_uploads") and uploads.files())})
     state["view"] = None
     if "a" in st.query_params:
         del st.query_params["a"]
@@ -406,7 +419,8 @@ def run_question(message):
             checked["ok"] = data.get("status") == "pass"
 
     try:
-        result = get_agent().run(message["question"], on_progress=on_progress, filters=message["filters"] or None)
+        result = get_agent().run(message["question"], on_progress=on_progress, filters=message["filters"] or None,
+                                 extra_search=uploads.searcher() if message.get("uploads") else None)
     except Exception:  # friendly message instead of a stack trace; details stay in the server log
         message.update(status="error", error="failed")
         return
@@ -455,14 +469,6 @@ def drawer_html(prefix, sources):
             + "".join(cards) + "</div>")
 
 
-def send_rating(message_id):
-    message = find_message(message_id)
-    value = state.get(f"feedback_{message_id}")
-    if message is None or value is None:
-        return
-    send_feedback(message.get("trace_run_id"), "up" if value == 1 else "down")
-
-
 def pick_followup(message_id):
     key = f"followups_{message_id}"
     question = state.get(key)
@@ -472,8 +478,10 @@ def pick_followup(message_id):
 
 
 # Feature panels under an answer: name -> button label. Only one is open per answer.
-PANELS = {"study": "Study this", "map": "Concept map", "share": "Share"}
-PHONE_OVERFLOW = ("map", "share")  # these move into "More" on phones
+PANELS = {"study": "Study this", "map": "Concept map", "listen": "Listen", "share": "Share", "save": "Save",
+          "report": "Write a review"}
+ROW_PANELS = ("study", "map", "listen", "share", "save")  # "Write a review" lives in "More"
+PHONE_OVERFLOW = ("map", "listen", "share", "save")  # these move into "More" on phones
 
 
 def toggle_panel(message_id, name):
@@ -495,6 +503,7 @@ def render_more(message, record, prefix):
                 st.rerun()
             for name in PHONE_OVERFLOW:
                 panel_button(mid, name, suffix="__m")
+        panel_button(mid, "report", suffix="__more")
         st.html(f"<span class='ps-btn' role='button' tabindex='0' data-copy='raw-{prefix}'>Copy answer</span>"
                 f"<pre class='ps-raw' id='raw-{prefix}'>{html.escape(record['answer_md'])}</pre>")
         st.download_button("Download Markdown", export.answer_markdown(record), file_name=export.markdown_filename(record["question"]),
@@ -529,10 +538,12 @@ def render_actions(message, record, prefix, readonly=False):
             if st.button("Go deeper", key=f"deeper_{mid}"):  # moves into "More" on phones
                 make_variant(message, "deeper")
                 st.rerun()
-        for name in PANELS:
+        for name in ROW_PANELS:
             panel_button(mid, name)
         render_more(message, record, prefix)
-        st.feedback("thumbs", key=f"feedback_{mid}", on_change=send_rating, args=(mid,))
+        st.feedback("thumbs", key=f"feedback_{mid}", on_change=feedback.on_thumbs,
+                    args=(record, mid, message.get("trace_run_id")))
+    feedback.render_reasons(record, mid, message.get("trace_run_id"))
     if state["errors"].get(mid):
         st.error(state["errors"].pop(mid))
 
@@ -549,6 +560,12 @@ def render_panel(message, record, prefix):
             concept_map.render_panel(record, mid, ask)
         elif name == "share":
             share.render_panel(record, mid, study=state.get("study_sets", {}).get(mid))
+        elif name == "listen":
+            tts.render_panel(record, mid)
+        elif name == "save":
+            collections.render_panel(record, mid)
+        elif name == "report":
+            report.render_panel(record, mid, prefix)
         st.button("Close", key=f"close_{mid}", type="tertiary", on_click=toggle_panel, args=(mid, name))
 
 
@@ -613,6 +630,7 @@ with st.sidebar:
         state["panel"] = {}
         state["view"] = None
         st.query_params.clear()
+        uploads.clear()  # uploaded papers never outlive the question they were added for
         st.rerun()
     if review.deck():
         due = review.due_count()
@@ -641,6 +659,10 @@ with st.sidebar:
         elif st.button("Clear history", key="clear_history", type="tertiary"):
             state["confirm_clear"] = True
             st.rerun()
+    picked = collections.sidebar_list()
+    if picked:
+        state["view"], state["collection"] = "collection", picked
+        st.rerun()
     if local.loaded() and not local.available():
         st.caption("This browser blocks storage, so history won't be kept after you leave.")
     st.divider()
@@ -677,7 +699,7 @@ def render_shared(share_id):
 
 
 shared_id = st.query_params.get("a")
-viewing = "shared" if shared_id else ("review" if state.get("view") == "review" else "answers")
+viewing = "shared" if shared_id else (state.get("view") if state.get("view") in ("review", "collection") else "answers")
 if viewing == "shared":
     render_shared(shared_id)
 elif viewing == "review":
@@ -685,6 +707,11 @@ elif viewing == "review":
         state["view"] = None
         st.rerun()
     review.render_screen()
+elif viewing == "collection":
+    if st.button("← Back to answers", key="collection_back", type="tertiary"):
+        state["view"] = None
+        st.rerun()
+    collections.render_view(state.get("collection"), open_record)
 elif not state["messages"]:
     st.markdown("# Ask the research a question.")
     st.html("<p class='ps-lead'>Answers are built from recent AI and machine-learning papers. "
@@ -717,6 +744,10 @@ with st.container(key="filters", horizontal=True):
              key="area_filter", label_visibility="collapsed", help="Only search these research areas (none selected = all)")
     st.segmented_control("Period", PERIODS, default=PERIODS[0], key="period_filter", label_visibility="collapsed",
                          help="Only search recent papers")
+    with st.popover(f"Your papers · {len(uploads.files())}" if uploads.files() else "Add your paper", key="uploads_popover"):
+        uploads.render_manager()
+    if uploads.files():
+        st.toggle("Include my papers", key="use_uploads", value=True)
 
 typed = st.chat_input(
     "Ask a follow-up as a new question…" if state["messages"] else "Ask about a method, benchmark or trend…",

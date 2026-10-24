@@ -17,3 +17,4 @@ pydantic>=2.6
 fsrs>=6.0
 genanki>=0.13
 graphviz>=0.20
+python-docx>=1.1
